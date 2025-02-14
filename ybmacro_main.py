@@ -335,16 +335,14 @@ class Macro_Baram_Cla():
 		self.mabi_time = time.time() - 999
 		while self.state['macro_running']:
 			if self.state['macro_type'] == 'auto_hunt':
-				self.skill_mapping['mabi']['delay']=0.02
-				self.skill_mapping['mabi']['curse']=0.02
-				self.skill_mapping['mabi']['poison']=0.02
+				self.skill_mapping['poison']['delay']=0.015
+				self.skill_mapping['curse']['delay']=0.015
+				self.skill_mapping['attack_chum']['delay']=0.008
+				self.skill_mapping['attack']['delay']=0.02
+				# self.skill_mapping['mabi']['delay']=0.02
 				macro_type = 'auto_hunt'
-				self.active_spell_auto(skill_name=['curse', 'mabi'], macro_type=macro_type, target_iter=[1,1], active_iter=16, change_dir=True, auto_bomu=True)
-				for _ in range(4):
-					self.active_spell_auto(skill_name=['poison', 'mabi'], macro_type=macro_type, target_iter=[1,1], active_iter=16, change_dir=True, auto_bomu=True)
-					self.active_spell_auto(skill_name=['attack', 'mabi'], macro_type=macro_type, target_iter=[1,1], active_iter=10, change_dir=True, auto_bomu=True)
-					self.active_spell_auto(skill_name=['poison', 'mabi'], macro_type=macro_type, target_iter=[1,1], active_iter=16, change_dir=True, auto_bomu=True)
-					self.active_spell_auto(skill_name=['attack_chum', 'attack_chum2'], macro_type=macro_type, target_iter=[1,1], active_iter=4, change_dir=False, auto_bomu=True)   
+				self.active_spell_auto(skill_name='curse', macro_type=macro_type, target_iter=[1], active_iter=10, change_dir=True, auto_bomu=True, auto_mabi=True)
+				self.active_spell_auto(skill_name=['poison','attack_chum', 'attack'], macro_type=macro_type, target_iter=[1,1,1], active_iter=30, change_dir=True, auto_bomu=True, auto_mabi=True)	   
 
 			elif self.state['macro_type']=='mabi':
 				self.skill_mapping['mabi']['delay']=0.005
@@ -357,14 +355,9 @@ class Macro_Baram_Cla():
 				self.active_spell_auto(skill_name='curse', macro_type=macro_type, target_iter=[1], active_iter=20, change_dir=True, auto_bomu=True, auto_mabi=True)
 
 			elif self.state['macro_type']=='poison':
-				self.skill_mapping['poison']['delay']=0.015
-				self.skill_mapping['curse']['delay']=0.015
-				self.skill_mapping['attack_chum']['delay']=0.008
-				self.skill_mapping['attack']['delay']=0.02
-				# self.skill_mapping['mabi']['delay']=0.02
+				self.skill_mapping['poison']['delay']=0.005
 				macro_type = 'poison'
-				self.active_spell_auto(skill_name='curse', macro_type=macro_type, target_iter=[1], active_iter=10, change_dir=True, auto_bomu=True, auto_mabi=True)
-				self.active_spell_auto(skill_name=['poison','attack_chum', 'attack'], macro_type=macro_type, target_iter=[1,1,1], active_iter=30, change_dir=True, auto_bomu=True, auto_mabi=True)				
+				self.active_spell_auto(skill_name='poison', macro_type=macro_type, target_iter=[1], active_iter=10, change_dir=True, auto_bomu=True, auto_mabi=True)			
 
 	def auto_gongj_heal(self):
 		while self.state['auto_gongj_heal']=='ON':
