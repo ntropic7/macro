@@ -403,7 +403,7 @@ class Macro_Baram_Cla():
 	def on_press(self, key):
 		"""키 입력 감지"""
 		try:
-			if key.char in ['?']:
+			if key.char in ['A']:
 				if self.state['macro_running']:
 					self.stop_macro()
 				else:
@@ -415,11 +415,11 @@ class Macro_Baram_Cla():
 	def on_release(self, key):
 		"""키 해제 감지"""
 		try:  
-			if key.char == '.':
+			if key.char == '>':
 				self._active_skill(skill_name='boho', target_iter=1)
 				self._active_skill(skill_name='muzang', target_iter=1)
 
-			elif key.char == 'A':
+			elif key.char == 'S':
 				self.state['macro_type'] = 'auto_hunt'
 				self.stop_macro()
 				print(f"macro_type change: {self.state['macro_type']}")
@@ -441,9 +441,6 @@ class Macro_Baram_Cla():
 
 			elif key.char == '{':
 				self.start_auto_gongj_heal()
-				
-			elif key.char == '>':
-				self.start_auto_chum()
 
 		except AttributeError:
 			pass
@@ -461,7 +458,7 @@ class Macro_Baram_Cla():
 		position_x, position_y = pyautogui.position()
 		window_width, window_height = (550, 180)
 
-		self.root.geometry(f"{window_width}x{window_height}+{3564}+{1076}")
+		self.root.geometry(f"{window_width}x{window_height}+{20}+{60}")
 
 		# Label 위젯 생성
 		self.type_label = tk.Label(self.root, text="macro_type", font=("Arial", 10))
