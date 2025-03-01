@@ -5,116 +5,17 @@ from pynput import keyboard, mouse
 import tkinter as tk
 from tkinter import messagebox
 import pyautogui
-import yaml
-import pytesseract
-import cv2
 import numpy as np
 from PIL import Image
+from image_utils import *
 
-pytesseract.pytesseract.tesseract_cmd = './Tesseract-OCR/tesseract.exe'
-
-
-def capture_and_crop(screenshot, crop_area=None):
-    """
-    화면 캡처 후 특정 영역을 자름
-    :param crop_area: 잘라낼 영역 (x, y, width, height)
-    :return: 잘라낸 이미지 (NumPy 배열)
-    """
-    # 화면 캡처
-    screenshot_np = np.array(screenshot)
-    image = cv2.cvtColor(screenshot_np, cv2.COLOR_RGB2BGR)  # OpenCV BGR 포맷으로 변환
-    x, y, w, h = crop_area
-    cropped_image = image[y:y+h, x:x+w]
-    cropped_image = Image.fromarray(cv2.cvtColor(cropped_image, cv2.COLOR_BGR2RGB))
-    return cropped_image
-
-def merge_close_coordinates(coordinates, threshold=20):
-    """
-    가까운 좌표들을 병합하는 함수.
-    
-    :param coordinates: [(x1, y1), (x2, y2), ...] 형식의 좌표 리스트
-    :param threshold: 병합할 최대 거리 임계값
-    :return: 병합된 좌표 리스트
-    """
-    if not coordinates:
-        return []
-
-    # numpy 배열로 변환
-    coords_array = np.array(coordinates)
-
-    # 결과 저장용 리스트
-    merged_coords = []
-
-    # 방문 여부 확인 리스트
-    visited = [False] * len(coordinates)
-
-    for i, coord in enumerate(coords_array):
-        if visited[i]:
-            continue
-
-        # 현재 좌표를 기준으로 병합
-        close_group = [coord]
-        visited[i] = True
-
-        for j, other_coord in enumerate(coords_array):
-            if not visited[j]:
-                # 유클리드 거리 계산
-                distance = np.linalg.norm(coord - other_coord)
-                if distance <= threshold:
-                    close_group.append(other_coord)
-                    visited[j] = True
-
-        # 그룹의 최소 계산
-        group_center = np.min(close_group, axis=0)
-        merged_coords.append(tuple(group_center))
-
-    return merged_coords
-
-
-
-def image_detection(screenshot, image_path_list, confidence=0.8, show=False):
-    screenshot_np = np.array(screenshot)  # PIL 이미지를 NumPy 배열로 변환 (BGR 형식)
-    screenshot_np = cv2.cvtColor(screenshot_np, cv2.COLOR_RGB2BGR)  # RGB → BGR 변환
-    
-    coordinates = []
-    for image_path in image_path_list:
-        image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
-        h, w = image.shape[:2]  # 높이와 너비 가져오기
-
-        # 템플릿 매칭
-        result = cv2.matchTemplate(screenshot_np, image, cv2.TM_CCOEFF_NORMED)
-        locations = np.where(result >= confidence)  # 매칭된 위치 추출 (신뢰도 기준)
-        coordinate = list(zip(locations[1], locations[0]))
-        coordinate = merge_close_coordinates(coordinate, threshold=20)
-        for coordinate_ in coordinate:
-            # coordinates.append(coordinate_)
-            coordinates.append((round(coordinate_[0] + w // 2), round(coordinate_[1] + h // 2)))
-        
-    if show:
-        for pt in coordinates:
-            cv2.rectangle(screenshot_np, pt, (pt[0] + 1, pt[1] + 1), (0, 255, 0), 5)
-        cv2.imshow('Matches', screenshot_np)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
-        
-    return coordinates
-
-def extract_text_from_image(region, cut_region=(360,190,290,230), config=r'--oem 1 --psm 6'):
-    screenshot = pyautogui.screenshot(region=region, allScreens=True)
-    screenshot_cut = capture_and_crop(screenshot, cut_region)
-    screenshot_np = np.array(screenshot_cut)
-    screenshot_gray = cv2.cvtColor(screenshot_np, cv2.COLOR_BGR2GRAY)
-    extracted_text = pytesseract.image_to_string(screenshot_gray, lang='kor', config=config)
-    return extracted_text
-
-  
 class Macro_Baram_Cla():
 	def __init__(self):
 		# 매크로 상태 및 설정
 		self.game_region = (223, 51, 1665, 956)
 		self.hpmp_region = (1679, 859, 183, 44)
 
-		self.state = {'macro_running': False, 'macro_type':'auto_hunt', 'mode': 'normal', 'auto_chum':False, 'auto_gongj_heal':'OFF', 'macro_pause':False}
+		self.state = {'macro_running': False, 'macro_type':'auto_hunt', 'mode': 'normal', 'auto_gongj_heal':'OFF', 'macro_pause':False}
 		self.skill_mapping = {
 			'mabi' : {'skk':'1', 'delay':0.02, 'direction':keyboard.Key.left},
 			'curse' : {'skk':'2', 'delay':0.02, 'direction':keyboard.Key.left},
@@ -258,11 +159,7 @@ class Macro_Baram_Cla():
 		self.state['macro_pause'] = False
 
 	def auto_bomu(self):
-		c = 0
 		if time.time() - self.bomu_time > 60:
-			if self.state['auto_chum']:
-				self.start_auto_chum()
-				c = 1
 			self.state['macro_pause'] = True
 			if self.skill_done == 1:
 				time.sleep(0.02)
@@ -270,15 +167,9 @@ class Macro_Baram_Cla():
 				self._active_skill(skill_name='boho', target_iter=2, reset_tap=True)
 				self.bomu_time = time.time()
 				self.state['macro_pause'] = False
-				if c > 0:
-					self.start_auto_chum()
 					
 	def auto_mabi(self, run=False):
-		c = 0
 		if time.time() - self.mabi_time > 5:
-			if self.state['auto_chum']:
-				self.start_auto_chum()
-				c = 1
 			self.state['macro_pause'] = True
 			if self.skill_done == 1:
 				for key, value in self.skill_mapping.items():
@@ -286,12 +177,13 @@ class Macro_Baram_Cla():
 						self.skill_mapping[key]['direction'] = keyboard.Key.left
 				dirs = ['left', 'up', 'down', 'right']
 				for active_i in dirs:
+					if not self.state['macro_running']:
+						self._reset_tap()
+						raise
 					self._active_skill(skill_name='mabi', target_iter=1, reset_tap=True)
 					self._change_direction(tap_method='natural')
 				self.mabi_time = time.time()
 				self.state['macro_pause'] = False
-				if c > 0:
-					self.start_auto_chum()
 
 	def active_spell_auto(self, skill_name, macro_type, target_iter=1, active_iter=1, change_dir=True, auto_bomu=True, auto_mabi=True):
 		if change_dir:
@@ -364,9 +256,6 @@ class Macro_Baram_Cla():
 			self.auto_heal(run=True)
 			time.sleep(0.05)
 			
-	def auto_chum(self):
-		while self.state['auto_chum']:
-			self._active_skill(skill_name=['attack_chum', 'attack_chum2'], target_iter=[1,1])
 	def start_macro(self):
 		"""매크로 시작"""
 		if not self.state['macro_running']:
@@ -391,14 +280,6 @@ class Macro_Baram_Cla():
 		else:
 			self.state['auto_gongj_heal'] = 'OFF'
 			self.state['marco_pause'] = False
-			
-	def start_auto_chum(self):
-		if not self.state['auto_chum']:
-			self.state['auto_chum'] = True
-			cmacro = threading.Thread(target=self.auto_chum, daemon=True)
-			cmacro.start()
-		else:
-			self.state['auto_chum'] = False
 
 	def on_press(self, key):
 		"""키 입력 감지"""
@@ -447,7 +328,6 @@ class Macro_Baram_Cla():
 
 	def update_label(self):
 		self.type_label.config(text=f"TYPE: {self.state['macro_type']} & {self.state['mode']}")  # Label의 텍스트 업데이트
-		self.chum_label.config(text=f"Auto Chum: {self.state['auto_chum']}")  # Label의 텍스트 업데이트
 		self.gongj_heal_label.config(text=f"Auto G/H : {self.state['auto_gongj_heal']}")
 		self.type_label.after(100, self.update_label)  # 1000ms(1초) 후에 다시 실행
 
@@ -466,9 +346,6 @@ class Macro_Baram_Cla():
 
 		self.gongj_heal_label = tk.Label(self.root, text="gongj_heal_mode", font=("Arial", 10))
 		self.gongj_heal_label.grid(row=0, column=1, padx=10, pady=10)
-		
-		self.chum_label = tk.Label(self.root, text="auto chum mode", font=("Arial", 10))
-		self.chum_label.grid(row=0, column=2, padx=10, pady=10)
 
 		self.start_button = tk.Button(self.root, text="매크로 시작", command=self.start_macro, width=15)
 		self.start_button.grid(row=1, column=0, padx=10, pady=10)

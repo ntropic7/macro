@@ -5,127 +5,29 @@ from pynput import keyboard, mouse
 import tkinter as tk
 from tkinter import messagebox
 import pyautogui
-import yaml
-import pytesseract
-import cv2
 import numpy as np
 from PIL import Image
+from image_utils import *
 
-pytesseract.pytesseract.tesseract_cmd = './Tesseract-OCR/tesseract.exe'
-
-
-def capture_and_crop(screenshot, crop_area=None):
-    """
-    화면 캡처 후 특정 영역을 자름
-    :param crop_area: 잘라낼 영역 (x, y, width, height)
-    :return: 잘라낸 이미지 (NumPy 배열)
-    """
-    # 화면 캡처
-    screenshot_np = np.array(screenshot)
-    image = cv2.cvtColor(screenshot_np, cv2.COLOR_RGB2BGR)  # OpenCV BGR 포맷으로 변환
-    x, y, w, h = crop_area
-    cropped_image = image[y:y+h, x:x+w]
-    cropped_image = Image.fromarray(cv2.cvtColor(cropped_image, cv2.COLOR_BGR2RGB))
-    return cropped_image
-
-def merge_close_coordinates(coordinates, threshold=20):
-    """
-    가까운 좌표들을 병합하는 함수.
-    
-    :param coordinates: [(x1, y1), (x2, y2), ...] 형식의 좌표 리스트
-    :param threshold: 병합할 최대 거리 임계값
-    :return: 병합된 좌표 리스트
-    """
-    if not coordinates:
-        return []
-
-    # numpy 배열로 변환
-    coords_array = np.array(coordinates)
-
-    # 결과 저장용 리스트
-    merged_coords = []
-
-    # 방문 여부 확인 리스트
-    visited = [False] * len(coordinates)
-
-    for i, coord in enumerate(coords_array):
-        if visited[i]:
-            continue
-
-        # 현재 좌표를 기준으로 병합
-        close_group = [coord]
-        visited[i] = True
-
-        for j, other_coord in enumerate(coords_array):
-            if not visited[j]:
-                # 유클리드 거리 계산
-                distance = np.linalg.norm(coord - other_coord)
-                if distance <= threshold:
-                    close_group.append(other_coord)
-                    visited[j] = True
-
-        # 그룹의 최소 계산
-        group_center = np.min(close_group, axis=0)
-        merged_coords.append(tuple(group_center))
-
-    return merged_coords
-
-
-
-def image_detection(screenshot, image_path_list, confidence=0.8, show=False):
-    screenshot_np = np.array(screenshot)  # PIL 이미지를 NumPy 배열로 변환 (BGR 형식)
-    screenshot_np = cv2.cvtColor(screenshot_np, cv2.COLOR_RGB2BGR)  # RGB → BGR 변환
-    
-    coordinates = []
-    for image_path in image_path_list:
-        image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
-        h, w = image.shape[:2]  # 높이와 너비 가져오기
-
-        # 템플릿 매칭
-        result = cv2.matchTemplate(screenshot_np, image, cv2.TM_CCOEFF_NORMED)
-        locations = np.where(result >= confidence)  # 매칭된 위치 추출 (신뢰도 기준)
-        coordinate = list(zip(locations[1], locations[0]))
-        coordinate = merge_close_coordinates(coordinate, threshold=20)
-        for coordinate_ in coordinate:
-            # coordinates.append(coordinate_)
-            coordinates.append((round(coordinate_[0] + w // 2), round(coordinate_[1] + h // 2)))
-        
-    if show:
-        for pt in coordinates:
-            cv2.rectangle(screenshot_np, pt, (pt[0] + 1, pt[1] + 1), (0, 255, 0), 5)
-        cv2.imshow('Matches', screenshot_np)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
-        
-    return coordinates
-
-def extract_text_from_image(region, cut_region=(360,190,290,230), config=r'--oem 1 --psm 6'):
-    screenshot = pyautogui.screenshot(region=region, allScreens=True)
-    screenshot_cut = capture_and_crop(screenshot, cut_region)
-    screenshot_np = np.array(screenshot_cut)
-    screenshot_gray = cv2.cvtColor(screenshot_np, cv2.COLOR_BGR2GRAY)
-    extracted_text = pytesseract.image_to_string(screenshot_gray, lang='kor', config=config)
-    return extracted_text
-
-  
 class Macro_Baram_Cla():
     def __init__(self):
         # 매크로 상태 및 설정
-        self.game_region = (802, 80, 960, 720)
-        self.hpmp_region = (1606, 683, 136, 40)
-        self.kingq_region_cut = (280, 180, 290, 230) 
+        self.game_region = (430, 50, 1272, 950)
+        self.hpmp_region = (1500, 851, 176, 50)
+        self.kingq_region_cut = (360,250,400,320)
         self.kings_speech = ['무례', '폐하께', '어요', '명', 'target', '다시', '취소', '형벌']
         self.kingq_wish = ['처녀귀신', '불귀신', '달갈귀신']
         
         self.state = {'macro_running': False, 'macro_type':'auto_hunt', 'mode': 'normal', 'kingq':False, 'auto_gongj_heal':'OFF', 'macro_pause':False}
         self.skill_mapping = {
-            'mabi' : {'skk':'1', 'delay':0.03, 'direction':keyboard.Key.left},
-            'curse' : {'skk':'2', 'delay':0.03, 'direction':keyboard.Key.left},
-            'heal': {'skk':'3', 'delay':0.005, 'direction':keyboard.Key.home},
-            'attack': {'skk':'4', 'delay':0.3, 'direction':keyboard.Key.left},
+            'mabi' : {'skk':'1', 'delay':0.02, 'direction':keyboard.Key.left},
+            'curse' : {'skk':'2', 'delay':0.02, 'direction':keyboard.Key.left},
+            'heal': {'skk':'3', 'delay':0.01, 'direction':keyboard.Key.home},
+            'attack': {'skk':'4', 'delay':0.2, 'direction':keyboard.Key.left},
             'gongj': {'skk':'5', 'delay':0.05, 'direction':None},
-            'attack_chum': {'skk':'6', 'delay':0.8, 'direction':None},
-            'poison': {'skk':'7', 'delay':0.03, 'direction':keyboard.Key.left},
+            'attack_chum': {'skk':'6', 'delay':0.5, 'direction':None},
+            'poison': {'skk':'7', 'delay':0.02, 'direction':keyboard.Key.left},
+            'hellfire': {'skk':'9', 'delay':0.5, 'direction':keyboard.Key.left},
             'boho': {'skk':'x', 'delay':0.1, 'direction':keyboard.Key.home},
             'muzang': {'skk':'z', 'delay':0.1, 'direction':keyboard.Key.home},
             
@@ -133,10 +35,11 @@ class Macro_Baram_Cla():
         self.mouse_controller = mouse.Controller()
         self.keyboard_controller = keyboard.Controller()
         
-        self.mp_thres = round(0.5 * self.hpmp_region[2])
-        self.hp_thres = round(0.4 * self.hpmp_region[2])
+        self.mp_thres = 0.6
+        self.hp_thres = 0.6
         self.skill_done = 1
         self.bomu_time = time.time() - 999
+        self.mabi_time = time.time() - 999
         self.target_monster = 'Nobody'
         
         # GUI 요소 초기화
@@ -154,7 +57,7 @@ class Macro_Baram_Cla():
             target_iter = [target_iter]
         
         for si, skill_name_ in enumerate(skill_name):
-            delay = random.uniform(self.skill_mapping[skill_name_]['delay'], self.skill_mapping[skill_name_]['delay'] + 0.01)
+            delay = random.uniform(self.skill_mapping[skill_name_]['delay'], self.skill_mapping[skill_name_]['delay'] + 0.001)
             for target_i in range(target_iter[si]):
                 time.sleep(delay)
                 if not self.skill_mapping[skill_name_]['skk'].isdigit():
@@ -164,7 +67,7 @@ class Macro_Baram_Cla():
                     self.keyboard_controller.release('z')
                     self.keyboard_controller.release(keyboard.Key.shift)
                     time.sleep(delay)
-                time.sleep(random.uniform(0.01, 0.02))
+                time.sleep(delay)
                 self.keyboard_controller.press(self.skill_mapping[skill_name_]['skk'])
                 self.keyboard_controller.release(self.skill_mapping[skill_name_]['skk'])
 
@@ -189,7 +92,7 @@ class Macro_Baram_Cla():
                 
     def _reset_tap(self):
         """리셋 키 동작 수행"""
-        delay = random.uniform(0.03, 0.03 + 0.01)
+        delay = random.uniform(0.01, 0.01 + 0.001)
         time.sleep(delay)
         self.keyboard_controller.release(keyboard.Key.shift)
         for action_key in [keyboard.Key.esc, keyboard.Key.tab, keyboard.Key.home, keyboard.Key.esc]:
@@ -215,16 +118,17 @@ class Macro_Baram_Cla():
                 elif value['direction'] == keyboard.Key.right:
                     self.skill_mapping[key]['direction'] = keyboard.Key.left
         
-    def auto_gongj(self, run=False, pause=True):
+    def auto_gongj(self, run=False):
         screenshot = pyautogui.screenshot(region=self.hpmp_region, allScreens=True)
-        mp_color = screenshot.getpixel((self.mp_thres, round(self.hpmp_region[3]*3/4)))
-        mp_color_low = np.mean([screenshot.getpixel((round(1-x * self.hpmp_region[2]),round(self.hpmp_region[3]*3/4))) for x in np.arange(0.1, 0.2, 0.01)])
-        while mp_color == (0,0,0):
+        mp_color = np.mean([screenshot.getpixel((round((1-x) * self.hpmp_region[2]),round(self.hpmp_region[3]*3/4))) for x in np.arange(self.mp_thres-0.1, self.mp_thres, 0.005)])
+        mp_color_low = np.mean([screenshot.getpixel((round((1-x) * self.hpmp_region[2]),round(self.hpmp_region[3]*3/4))) for x in np.arange(0.1, 0.2, 0.005)])
+        while mp_color < 30:
             self.state['macro_pause'] = True
             if run and self.state['auto_gongj_heal']!='ON':
+                self.state['macro_pause'] = False
                 raise
             if self.skill_done == 1:
-                if mp_color_low < 50:
+                if mp_color_low < 40:
                     time.sleep(0.04)
                     self.keyboard_controller.press(keyboard.Key.ctrl)
                     time.sleep(0.04)
@@ -235,197 +139,120 @@ class Macro_Baram_Cla():
                 self._active_skill(skill_name='gongj', target_iter=1)
                 self._active_skill(skill_name='heal', target_iter=1)
                 screenshot = pyautogui.screenshot(region=self.hpmp_region, allScreens=True)
-                mp_color = screenshot.getpixel((self.mp_thres, round(self.hpmp_region[3]*3/4)))
-                mp_color_low = np.mean([screenshot.getpixel((round(1-x * self.hpmp_region[2]),round(self.hpmp_region[3]*3/4))) for x in np.arange(0.1, 0.2, 0.01)])
-        if not pause:
-            self.state['macro_pause'] = False
+                mp_color = np.mean([screenshot.getpixel((round((1-x) * self.hpmp_region[2]),round(self.hpmp_region[3]*3/4))) for x in np.arange(self.mp_thres-0.1, self.mp_thres, 0.01)])
+                mp_color_low = np.mean([screenshot.getpixel((round((1-x) * self.hpmp_region[2]),round(self.hpmp_region[3]*3/4))) for x in np.arange(0.1, 0.2, 0.01)])
+        self.state['macro_pause'] = False
 
     def auto_heal(self, run=False):
         screenshot = pyautogui.screenshot(region=self.hpmp_region, allScreens=True)
-        hp_color = screenshot.getpixel((self.hp_thres,round(self.hpmp_region[3]/4)))
-        while hp_color == (0,0,0):
+        hp_color = np.mean([screenshot.getpixel((round((1-x) * self.hpmp_region[2]),round(self.hpmp_region[3]/4))) for x in np.arange(self.hp_thres-0.1, self.hp_thres, 0.005)])
+        while hp_color < 30:
             self.state['macro_pause'] = True
             if run and self.state['auto_gongj_heal']!='ON':
+                self.state['macro_pause'] = False
                 raise
             if self.skill_done == 1:
                 for _ in range(5):
-                    self._active_skill(skill_name='heal', target_iter=2)
-                time.sleep(0.05)
+                    self._active_skill(skill_name='heal', target_iter=1)
+                time.sleep(0.02)
                 self.keyboard_controller.press(keyboard.Key.esc)
                 self.keyboard_controller.release(keyboard.Key.esc)
                 screenshot = pyautogui.screenshot(region=self.hpmp_region, allScreens=True)
-                hp_color = screenshot.getpixel((self.hp_thres,round(self.hpmp_region[3]/4)))
+                hp_color = np.mean([screenshot.getpixel((round((1-x) * self.hpmp_region[2]),round(self.hpmp_region[3]/4))) for x in np.arange(self.hp_thres-0.1, self.hp_thres, 0.005)])
         self.state['macro_pause'] = False
     
     def auto_bomu(self):
-        if time.time() - self.bomu_time > 15:
-            self._reset_tap()
-            self._active_skill(skill_name='boho', target_iter=2)
-            self._active_skill(skill_name='muzang', target_iter=2)
-            self.bomu_time = time.time()
+        if time.time() - self.bomu_time > 60:
+            self.state['macro_pause'] = True
+            if self.skill_done == 1:
+                time.sleep(0.02)
+                self._active_skill(skill_name='muzang', target_iter=2, reset_tap=True)
+                self._active_skill(skill_name='boho', target_iter=2, reset_tap=True)
+                self.bomu_time = time.time()
+                self.state['macro_pause'] = False
 
-    def active_spell_auto(self, skill_name, target_iter=1, active_iter=1, change_dir=True, auto_bomu=True, auto_gongj=True, auto_heal=True):
+    def auto_mabi(self, run=False):
+        if time.time() - self.mabi_time > 5:
+            self.state['macro_pause'] = True
+            if self.skill_done == 1:
+                for key, value in self.skill_mapping.items():
+                    if value['direction'] in [keyboard.Key.right,keyboard.Key.up,keyboard.Key.down]:
+                        self.skill_mapping[key]['direction'] = keyboard.Key.left
+                for active_i in range(8):
+                    if not self.state['macro_running']:
+                        self._reset_tap()
+                        raise
+                    self._active_skill(skill_name='mabi', target_iter=1, reset_tap=False)
+                    if active_i == 3:
+                        self._change_direction(tap_method='left_right')
+                        self._reset_tap()
+                self.mabi_time = time.time()
+                self.state['macro_pause'] = False
+
+    def active_spell_auto(self, skill_name, macro_type, target_iter=1, active_iter=1, change_dir=True, auto_bomu=True, auto_mabi=True):
         if change_dir:
             active_iter = round(active_iter/2)
-            
+
         for active_i in range(active_iter):
             if auto_bomu:
                 self.auto_bomu()
-            if auto_gongj:
-                self.auto_gongj()
-            if auto_heal:
-                self.auto_heal()
-            if not self.state['macro_running'] or not self.state['macro_type']=='auto_hunt':
+            if auto_mabi:
+                self.auto_mabi()
+            if not self.state['macro_running'] or not self.state['macro_type']==macro_type:
+                self._reset_tap()
                 raise
+            while self.state['macro_pause']:
+                time.sleep(0.1)
+            self.skill_done = 0
             self._active_skill(skill_name, target_iter)
-            
-        self._reset_tap()
+            self.skill_done = 1
+
         if change_dir:
+            self._reset_tap()
             self._change_direction()
+
             for active_i in range(active_iter):
                 if auto_bomu:
                     self.auto_bomu()
-                if auto_gongj:
-                    self.auto_gongj()
-                if auto_heal:
-                    self.auto_heal()
-                if not self.state['macro_running'] or not self.state['macro_type']=='auto_hunt':
+                if auto_mabi:
+                    self.auto_mabi()
+                if not self.state['macro_running'] or not self.state['macro_type']==macro_type:
                     self._reset_tap()
                     raise
+                while self.state['macro_pause']:
+                    time.sleep(0.1)
+                self.skill_done = 0
                 self._active_skill(skill_name, target_iter)
-                
-    def active_spell_auto_natural(self, skill_name, target_iter=1, change_dir=True, auto_bomu=True, auto_gongj=True, auto_heal=True):
-        if change_dir:
-            dirs = ['left', 'up', 'down', 'right']
-        else:
-            dirs = ['left']
-            
-        for active_i in dirs:
-            if auto_bomu:
-                self.auto_bomu()
-            if auto_gongj:
-                self.auto_gongj()
-            if auto_heal:
-                self.auto_heal()
-            if not self.state['macro_running'] or not self.state['macro_type']=='auto_hunt':
-                self._reset_tap()
-                raise
-            self._active_skill(skill_name, target_iter, reset_tap=True)
-            if len(dirs) > 1:
-                self._change_direction(tap_method='natural')
+                self.skill_done = 1
 
     def run_macro(self):
         """매크로 실행 함수"""
+        self.bomu_time = time.time() - 999
+        self.mabi_time = time.time() - 999
         while self.state['macro_running']:
-            self.skill_mapping['mabi']['delay']=0.03
-            self.skill_mapping['mabi']['curse']=0.03
-            self.skill_mapping['mabi']['poison']=0.03
             if self.state['macro_type'] == 'auto_hunt':
-                if self.state['mode'] == 'normal': # 일반사냥, 탭 = 좌우
-                    self.active_spell_auto(skill_name=['curse', 'mabi'], target_iter=[1,1], active_iter=16, change_dir=True, auto_bomu=True, auto_gongj=True, auto_heal=True)
-                    for _ in range(4):
-                        self.active_spell_auto(skill_name=['poison', 'mabi'], target_iter=[1,1], active_iter=16, change_dir=True, auto_bomu=True, auto_gongj=True, auto_heal=True)
-                        self.active_spell_auto(skill_name=['attack', 'mabi'], target_iter=[1,1], active_iter=10, change_dir=True, auto_bomu=True, auto_gongj=True, auto_heal=True)
-                        self.active_spell_auto(skill_name=['poison', 'mabi'], target_iter=[1,1], active_iter=16, change_dir=True, auto_bomu=True, auto_gongj=True, auto_heal=True)
-                        self.active_spell_auto(skill_name='attack_chum', target_iter=1, active_iter=4, change_dir=False, auto_bomu=True, auto_gongj=True, auto_heal=True)   
-                elif self.state['mode'] == 'chum': # 첨사냥, 탭 = 자연스럽게
-                    self.active_spell_auto_natural(skill_name=['curse', 'mabi'], target_iter=[1,1], change_dir=True, auto_bomu=True, auto_gongj=True, auto_heal=True)
-                    self.active_spell_auto_natural(skill_name=['poison', 'mabi'], target_iter=[1,1], change_dir=True, auto_bomu=True, auto_gongj=True, auto_heal=True)
-                    self.active_spell_auto_natural(skill_name='attack_chum', target_iter=1, change_dir=False, auto_bomu=True, auto_gongj=True, auto_heal=True)
-                    self.active_spell_auto_natural(skill_name='attack_chum', target_iter=1, change_dir=False, auto_bomu=True, auto_gongj=True, auto_heal=True)
-                    self.active_spell_auto_natural(skill_name=['poison', 'mabi'], target_iter=[1,1], change_dir=True, auto_bomu=True, auto_gongj=True, auto_heal=True)
-                    self.active_spell_auto_natural(skill_name=['attack', 'mabi'], target_iter=[1,1], change_dir=True, auto_bomu=True, auto_gongj=True, auto_heal=True)
-                    self.active_spell_auto_natural(skill_name=['poison', 'mabi'], target_iter=[1,1], change_dir=True, auto_bomu=True, auto_gongj=True, auto_heal=True)
-                    self.active_spell_auto_natural(skill_name='attack_chum', target_iter=1, change_dir=False, auto_bomu=True, auto_gongj=True, auto_heal=True)
-                    self.active_spell_auto_natural(skill_name='attack_chum', target_iter=1, change_dir=False, auto_bomu=True, auto_gongj=True, auto_heal=True)
-                    
-            elif self.state['macro_type']=='mabi':
-                self.skill_mapping['mabi']['delay']=0.005
-                # if self.state['mode'] == 'normal': # 일반사냥, 탭 = 좌우
-                for active_i in range(5):
-                    if not self.state['macro_running'] or not self.state['macro_type']=='mabi':
-                        self._reset_tap()
-                        raise
-                    while self.state['macro_pause']:
-                        time.sleep(0.1)
-                    self.skill_done = 0
-                    self._active_skill(skill_name=['mabi'], target_iter=[1])
-                    self.skill_done = 1
+                self.skill_mapping['poison']['delay']=0.015
+                self.skill_mapping['curse']['delay']=0.015
+                self.skill_mapping['attack_chum']['delay']=0.008
+                self.skill_mapping['attack']['delay']=0.02
+                macro_type = 'auto_hunt'
+                self.active_spell_auto(skill_name='curse', macro_type=macro_type, target_iter=[1], active_iter=10, change_dir=True, auto_bomu=True, auto_mabi=True)
+                self.active_spell_auto(skill_name=['poison','attack_chum', 'attack'], macro_type=macro_type, target_iter=[1,1,1], active_iter=30, change_dir=True, auto_bomu=True, auto_mabi=True)        
 
-                self._change_direction()
-                for active_i in range(5):
-                    if not self.state['macro_running'] or not self.state['macro_type']=='mabi':
-                        self._reset_tap()
-                        raise
-                    while self.state['macro_pause']:
-                        time.sleep(0.1)
-                    self.skill_done = 0
-                    self._active_skill(skill_name=['mabi'], target_iter=[1])
-                    self.skill_done = 1
-                        
+            elif self.state['macro_type']=='mabi':
+                self.skill_mapping['mabi']['delay']=0.02
+                macro_type = 'mabi'
+                self.active_spell_auto(skill_name=['mabi'], macro_type=macro_type, target_iter=[1], active_iter=10, change_dir=True, auto_bomu=False, auto_mabi=False)
+
             elif self.state['macro_type']=='curse':
                 self.skill_mapping['curse']['delay']=0.005
-                self.skill_mapping['poison']['delay']=0.005
-                self.skill_mapping['mabi']['delay']=0.005
-                # if self.state['mode'] == 'normal': # 일반사냥, 탭 = 좌우
-                for active_i in range(5):
-                    if not self.state['macro_running'] or not self.state['macro_type']=='curse':
-                        self._reset_tap()
-                        raise
-                    while self.state['macro_pause']:
-                        time.sleep(0.1)
-                    self.skill_done = 0
-                    self._active_skill(skill_name=['mabi', 'curse', 'poison'], target_iter=[1,1,1])
-                    self.skill_done = 1
+                macro_type = 'curse'
+                self.active_spell_auto(skill_name='curse', macro_type=macro_type, target_iter=[1], active_iter=20, change_dir=True, auto_bomu=True, auto_mabi=True)
 
-                self._change_direction()
-                for active_i in range(5):
-                    if not self.state['macro_running'] or not self.state['macro_type']=='curse':
-                        self._reset_tap()
-                        raise
-                    while self.state['macro_pause']:
-                        time.sleep(0.1)
-                    self.skill_done = 0
-                    self._active_skill(skill_name=['mabi','curse', 'poison'], target_iter=[1,1,1])
-                    self.skill_done = 1
-                        
             elif self.state['macro_type']=='poison':
-                self.skill_mapping['curse']['delay']=0.008
-                self.skill_mapping['poison']['delay']=0.008
-                self.skill_mapping['mabi']['delay']=0.008
-                # if self.state['mode'] == 'normal': # 일반사냥, 탭 = 좌우
-                for active_i in range(5):
-                    if not self.state['macro_running'] or not self.state['macro_type']=='poison':
-                        self._reset_tap()
-                        raise
-                    while self.state['macro_pause']:
-                        time.sleep(0.1)
-                    self.skill_done = 0
-                    self.keyboard_controller.press(keyboard.Key.space)
-                    self.keyboard_controller.release(keyboard.Key.space)
-                    time.sleep(random.uniform(0.03, 0.03 + 0.01))
-                    self._active_skill(skill_name=['mabi','curse','poison'], target_iter=[1,1,1])
-                    self.keyboard_controller.press(keyboard.Key.space)
-                    self.keyboard_controller.release(keyboard.Key.space)
-                    time.sleep(random.uniform(0.03, 0.03 + 0.01))
-                    self.skill_done = 1
-
-                self._change_direction()
-                for active_i in range(5):
-                    if not self.state['macro_running'] or not self.state['macro_type']=='poison':
-                        self._reset_tap()
-                        raise
-                    while self.state['macro_pause']:
-                        time.sleep(0.1)
-                    self.skill_done = 0
-                    self.keyboard_controller.press(keyboard.Key.space)
-                    self.keyboard_controller.release(keyboard.Key.space)
-                    time.sleep(random.uniform(0.03, 0.03 + 0.01))
-                    self._active_skill(skill_name=['mabi','curse','poison'], target_iter=[1,1,1])
-                    self.keyboard_controller.press(keyboard.Key.space)
-                    self.keyboard_controller.release(keyboard.Key.space)
-                    time.sleep(random.uniform(0.03, 0.03 + 0.01))
-                    self.skill_done = 1
+                self.skill_mapping['poison']['delay']=0.005
+                macro_type = 'poison'
+                self.active_spell_auto(skill_name='poison', macro_type=macro_type, target_iter=[1], active_iter=10, change_dir=True, auto_bomu=True, auto_mabi=True)    
                         
     def auto_gongj_heal(self):
         while self.state['auto_gongj_heal']=='ON':
@@ -435,36 +262,41 @@ class Macro_Baram_Cla():
                     
     def auto_king_q(self):
         while self.state['kingq']:
-            delay = random.uniform(0.005, 0.001)
+            delay = random.uniform(0.01, 0.001)
             phase = 1
             self.start_auto_gongj_heal()
             while True:
                 screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
-                king_coord = image_detection(screenshot, ['king2.jpg'], 0.8, show=False)
+                king_coord = image_detection(screenshot, ['king.png'], 0.7, show=False)
 
                 if len(king_coord) == 0:
                     time.sleep(0.5)
                 else:
                     # 첫 번째 좌표로 마우스 이동
-                    target_x = round((self.game_region[0] + king_coord[0][0])/0.8)
-                    target_y = round((self.game_region[1] + king_coord[0][1])/0.8) - 1350
+                    target_x = self.game_region[0] + king_coord[0][0]
+                    target_y = self.game_region[1] + king_coord[0][1]
 
                     pyautogui.moveTo(target_x, target_y, duration=0.1)  # 마우스 이동 (0.5초 동안 이동)
                     pyautogui.click()
-                    pyautogui.moveTo(self.game_region[0]/0.8, self.game_region[1]/0.8-1350, duration=0.1)  # 마우스 이동 (0.5초 동안 이동)
+                    pyautogui.moveTo(self.game_region[0], self.game_region[1], duration=0.1)  # 마우스 이동 (0.5초 동안 이동)
 
                     extracted_text = extract_text_from_image(self.game_region, cut_region=self.kingq_region_cut, config=r'--oem 1 --psm 6')
+                    extracted_text = extracted_text.replace(' ','')
+
+                    # 퀘스트 완료 후
                     if self.target_monster in self.kingq_wish:
                         if '받든' in extracted_text:
                             self.target_monster = 'Nobody'
-                            self.keyboard_controller.press(keyboard.Key.space)
-                            self.keyboard_controller.release(keyboard.Key.space)
+                            self.keyboard_controller.press(keyboard.Key.enter)
+                            self.keyboard_controller.release(keyboard.Key.enter)
                             time.sleep(1)
                             pyautogui.moveTo(target_x, target_y, duration=0.1)  # 마우스 이동 (0.5초 동안 이동)
                             pyautogui.click()
                             pyautogui.moveTo(self.game_region[0]/0.8, self.game_region[1]/0.8-1350, duration=0.1)  # 마우스 이동 (0.5초 동안 이동)
                             extracted_text = extract_text_from_image(self.game_region, cut_region=self.kingq_region_cut, config=r'--oem 1 --psm 6')
-                            
+                            extracted_text = extracted_text.replace(' ','')
+
+                    # 퀘스트 시작
                     if phase == 1:
                         for ti, text in enumerate(self.kings_speech[:4]):
                             if not self.state['kingq']:
@@ -479,13 +311,13 @@ class Macro_Baram_Cla():
                                     self.target_monster = extracted_text.split('!')[1].split('을')[0].strip()
                                     self.kings_speech[4] = self.target_monster
                                     phase = 2
-                                self.keyboard_controller.press(keyboard.Key.space)
-                                self.keyboard_controller.release(keyboard.Key.space)
+                                self.keyboard_controller.press(keyboard.Key.enter)
+                                self.keyboard_controller.release(keyboard.Key.enter)
                                 time.sleep(delay)
                                 extracted_text = extract_text_from_image(self.game_region, cut_region=self.kingq_region_cut, config=r'--oem 1 --psm 6')
+                                extracted_text = extracted_text.replace(' ','')
 
                         self.keyboard_controller.release(keyboard.Key.esc)
-
                         if self.target_monster in self.kingq_wish:
                             break
 
@@ -502,10 +334,11 @@ class Macro_Baram_Cla():
                                 if ti == 3:
                                     self.target_monster = 'Nobody'
                                     phase = 1
-                                self.keyboard_controller.press(keyboard.Key.space)
-                                self.keyboard_controller.release(keyboard.Key.space)
+                                self.keyboard_controller.press(keyboard.Key.enter)
+                                self.keyboard_controller.release(keyboard.Key.enter)
                                 time.sleep(delay)
-                                extracted_text = extract_text_from_image(self.game_region, cut_region=self.kingq_region_cut, config=r'--oem 1 --psm 6')        
+                                extracted_text = extract_text_from_image(self.game_region, cut_region=self.kingq_region_cut, config=r'--oem 1 --psm 6')   
+                                extracted_text = extracted_text.replace(' ','')
                     time.sleep(delay)
                     self.keyboard_controller.press(keyboard.Key.esc)
                     self.keyboard_controller.release(keyboard.Key.esc)
@@ -553,7 +386,7 @@ class Macro_Baram_Cla():
     def on_press(self, key):
         """키 입력 감지"""
         try:
-            if key.char in ['/']:
+            if key.char in ['A']:
                 if self.state['macro_running']:
                     self.stop_macro()
                 else:
@@ -564,52 +397,44 @@ class Macro_Baram_Cla():
 
     def on_release(self, key):
         """키 해제 감지"""
-        try:
-            if key.char == 'M':
-                if self.state['mode'] == 'normal':
-                    self.state['mode'] = 'chum'
-                    print(f"mode change: {self.state['mode']}")
-                elif self.state['mode'] == 'chum':
-                    self.state['mode'] = 'normal'
-                    print(f"mode change: {self.state['mode']}")
-                    
-            elif key.char == '.':
+        try:  
+            if key.char == '>':
                 self._active_skill(skill_name='boho', target_iter=1)
                 self._active_skill(skill_name='muzang', target_iter=1)
-                    
-            elif key.char == 'A':
+
+            elif key.char == 'S':
                 self.state['macro_type'] = 'auto_hunt'
                 self.stop_macro()
                 print(f"macro_type change: {self.state['macro_type']}")
-                
+
             elif key.char == 'O':
                 self.state['macro_type'] = 'mabi'
                 self.stop_macro()
                 print(f"macro_type change: {self.state['macro_type']}")
-                
+
             elif key.char == 'K':
                 self.state['macro_type'] = 'curse'
                 self.stop_macro()
                 print(f"macro_type change: {self.state['macro_type']}")
-                
-            elif key.char == 'L':
+
+            elif key.char == 'P':
                 self.state['macro_type'] = 'poison'
                 self.stop_macro()
                 print(f"macro_type change: {self.state['macro_type']}")
+
+            elif key.char == '{':
+                self.start_auto_gongj_heal()
                 
             elif key.char == '}':
                 self.start_kingq()
-            
-            elif key.char == '{':
-                self.start_auto_gongj_heal()
                 
         except AttributeError:
             pass
 
     def update_label(self):
-        self.type_label.config(text=f"TYPE: {self.state['macro_type']} & {self.state['mode']}")  # Label의 텍스트 업데이트
-        self.king_label.config(text=f"KING TARGET MONSTER: {self.target_monster}")  # Label의 텍스트 업데이트
-        self.gongj_heal_label.config(text=f"Auto G/H : {self.state['auto_gongj_heal']}")
+        self.type_label.config(text=f"TYPE: {self.state['macro_type']}")  # Label의 텍스트 업데이트
+        self.king_label.config(text=f"KING: {self.target_monster}")  # Label의 텍스트 업데이트
+        self.gongj_heal_label.config(text=f"A G/H : {self.state['auto_gongj_heal']}")
         self.type_label.after(100, self.update_label)  # 1000ms(1초) 후에 다시 실행
         # self.king_label.after(100, self.update_label)  # 1000ms(1초) 후에 다시 실행
                                 
@@ -618,31 +443,35 @@ class Macro_Baram_Cla():
         self.root = tk.Tk()
         self.root.title("바클 매크로")
         position_x, position_y = pyautogui.position()
-        window_width, window_height = (400, 250)
+        window_width, window_height = (200, 450)
 
-        self.root.geometry(f"{window_width}x{window_height}+{1197}+{-340}")
+        self.root.geometry(f"{window_width}x{window_height}+{0}+{30}")
+
+        label_font = 10
+        pad = 0
+        bwidth = 15
         
         # Label 위젯 생성
-        self.type_label = tk.Label(self.root, text="macro_type", font=("Arial", 10))
-        self.type_label.grid(row=0, column=0, padx=10, pady=10)
+        self.type_label = tk.Label(self.root, text="macro_type", font=("Arial", label_font))
+        self.type_label.grid(row=0, column=0, sticky="w", padx=pad, pady=pad)
         
-        self.gongj_heal_label = tk.Label(self.root, text="gongj_heal_mode", font=("Arial", 10))
-        self.gongj_heal_label.grid(row=0, column=1, padx=10, pady=10)
+        self.gongj_heal_label = tk.Label(self.root, text="gongj_heal_mode", font=("Arial", label_font))
+        self.gongj_heal_label.grid(row=1, column=0, sticky="w", padx=pad, pady=pad)
 
-        self.king_label = tk.Label(self.root, text="king_target_monster", font=("Arial", 10))
-        self.king_label.grid(row=1, column=0, columnspan=2, padx=10, pady=10)
+        self.king_label = tk.Label(self.root, text="king_target_monster", font=("Arial", label_font))
+        self.king_label.grid(row=2, column=0, sticky="w", padx=pad, pady=pad)
         
-        self.start_button = tk.Button(self.root, text="매크로 시작", command=self.start_macro, width=15)
-        self.start_button.grid(row=2, column=0, padx=10, pady=10)
+        self.start_button = tk.Button(self.root, text="매크로 시작", command=self.start_macro, width=bwidth, font=("Arial", label_font))
+        self.start_button.grid(row=3, column=0, sticky="w", padx=pad, pady=pad)
 
-        self.stop_button = tk.Button(self.root, text="매크로 종료", command=self.stop_macro, width=15, state=tk.DISABLED)
-        self.stop_button.grid(row=2, column=1, padx=10, pady=10)
+        self.stop_button = tk.Button(self.root, text="매크로 종료", command=self.stop_macro, width=bwidth, font=("Arial", label_font), state=tk.DISABLED)
+        self.stop_button.grid(row=4, column=0, sticky="w", padx=pad, pady=pad)
         
-        self.auto_gongj_heal_button = tk.Button(self.root, text="자동 공증/힐", command=self.start_auto_gongj_heal, width=15)
-        self.auto_gongj_heal_button.grid(row=3, column=0, padx=10, pady=10)
+        self.auto_gongj_heal_button = tk.Button(self.root, text="자동 공증/힐", command=self.start_auto_gongj_heal, width=bwidth, font=("Arial", label_font))
+        self.auto_gongj_heal_button.grid(row=5, column=0, sticky="w", padx=pad, pady=pad)
         
-        self.kingq_button = tk.Button(self.root, text="왕퀘 자동 받기", command=self.start_kingq, width=15)
-        self.kingq_button.grid(row=3, column=1, padx=10, pady=10)
+        self.kingq_button = tk.Button(self.root, text="왕퀘 자동 받기", command=self.start_kingq, width=bwidth, font=("Arial", label_font))
+        self.kingq_button.grid(row=6, column=0, sticky="w", padx=pad, pady=pad)
         
         self.update_label()
 
