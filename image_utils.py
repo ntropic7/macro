@@ -62,7 +62,7 @@ def merge_close_coordinates(coordinates, threshold=20):
 
     return merged_coords
 
-def image_detection(screenshot, image_path_list, confidence=0.8, show=False):
+def image_detection(screenshot, image_path_list, confidence=0.8, merge_thres=20, show=False):
     screenshot_np = np.array(screenshot)  # PIL 이미지를 NumPy 배열로 변환 (BGR 형식)
     screenshot_np = cv2.cvtColor(screenshot_np, cv2.COLOR_RGB2BGR)  # RGB → BGR 변환
     
@@ -76,7 +76,7 @@ def image_detection(screenshot, image_path_list, confidence=0.8, show=False):
         result = cv2.matchTemplate(screenshot_np, image, cv2.TM_CCOEFF_NORMED)
         locations = np.where(result >= confidence)  # 매칭된 위치 추출 (신뢰도 기준)
         coordinate = list(zip(locations[1], locations[0]))
-        coordinate = merge_close_coordinates(coordinate, threshold=20)
+        coordinate = merge_close_coordinates(coordinate, threshold=merge_thres)
         for coordinate_ in coordinate:
             # coordinates.append(coordinate_)
             coordinates.append((round(coordinate_[0] + w // 2), round(coordinate_[1] + h // 2)))
@@ -97,3 +97,27 @@ def extract_text_from_image(region, cut_region=(360,190,290,230), config=r'--oem
     screenshot_gray = cv2.cvtColor(screenshot_np, cv2.COLOR_BGR2GRAY)
     extracted_text = pytesseract.image_to_string(screenshot_gray, lang='kor', config=config)
     return extracted_text
+
+def find_coordinate(coordinate_screenshot, confidence=0.7, merge_thres=5, width=75):
+    coordinate = [0,0,0,0]
+    for i in range(10):
+        coord = image_detection(coordinate_screenshot, [f'./image/num{i}.png'], confidence, merge_thres, show=False)
+        for x,y in coord:
+            if x/width <= 0.25:
+                coordinate[0] = i
+            elif x/width > 0.25 and x/width <= 0.50:
+                coordinate[1] = i
+            elif x/width > 0.50 and x/width <= 0.75:
+                coordinate[2] = i
+            elif x/width > 0.75 and x/width <= 1.00:
+                coordinate[3] = i
+    coordinate = coordinate[0]*1000 + coordinate[1]*100 + coordinate[2]*10 + coordinate[3]
+    return coordinate
+
+def get_current_coordinate(screenshot, left_cut_region = (1060,905,85,25), right_cut_region = (1150,905,85,25), confidence=0.7, merge_thres=5, width=75):
+    screenshot_cut_lc = capture_and_crop(screenshot, left_cut_region)
+    coord_x = find_coordinate(screenshot_cut_lc, confidence, merge_thres, width)
+    screenshot_cut_rc = capture_and_crop(screenshot, right_cut_region)
+    coord_y = find_coordinate(screenshot_cut_rc, confidence, merge_thres, width)
+    return (coord_x, coord_y)
+    

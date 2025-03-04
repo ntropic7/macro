@@ -12,13 +12,15 @@ from image_utils import *
 class Macro_Baram_Cla():
     def __init__(self):
         # 매크로 상태 및 설정
-        self.game_region = (430, 50, 1272, 950)
-        self.hpmp_region = (1500, 851, 176, 50)
-        self.kingq_region_cut = (360,250,400,320)
-        self.kings_speech = ['무례', '폐하께', '어요', '명', 'target', '다시', '취소', '형벌']
-        self.kingq_wish = ['처녀귀신', '불귀신', '달갈귀신']
-        
-        self.state = {'macro_running': False, 'macro_type':'auto_hunt', 'mode': 'normal', 'kingq':False, 'auto_gongj_heal':'OFF', 'macro_pause':False}
+        self.game_region = (520, 110, 1200, 900)
+        self.hpmp_cut_region = (1002, 750, 172, 50)
+        self.kingq_cut_region = (320, 220, 400, 300)
+        self.left_coord_cut_region = (999, 850, 75, 23)
+        self.right_coord_cut_region = (1082, 850, 75, 23)
+
+        self.kings_speech = ['무례', '폐하께', '임무', '무서', '어요', '어명이오', '네이놈', '아직', '다시', '취소', '형벌']
+        self.kingq_wish = ['처녀귀신', '불귀신', '달갈귀신', '달갤귀신']
+        self.state = {'macro_running': False, 'macro_type':'auto_hunt', 'mode': 'normal', 'kingq':False, 'auto_gongj_heal':'OFF', 'macro_pause':False, 'auto_move':False, 'move_type':'out_palace', 'auto_pilot': False} 
         self.skill_mapping = {
             'mabi' : {'skk':'1', 'delay':0.02, 'direction':keyboard.Key.left},
             'curse' : {'skk':'2', 'delay':0.02, 'direction':keyboard.Key.left},
@@ -30,7 +32,10 @@ class Macro_Baram_Cla():
             'hellfire': {'skk':'9', 'delay':0.5, 'direction':keyboard.Key.left},
             'boho': {'skk':'x', 'delay':0.1, 'direction':keyboard.Key.home},
             'muzang': {'skk':'z', 'delay':0.1, 'direction':keyboard.Key.home},
-            
+            'east':  {'skk':'m', 'delay':0.2, 'direction':'1'},
+            'west':  {'skk':'m', 'delay':0.2, 'direction':'2'},
+            'south':  {'skk':'m', 'delay':0.2, 'direction':'3'},
+            'north':  {'skk':'m', 'delay':0.2, 'direction':'4'},
         }
         self.mouse_controller = mouse.Controller()
         self.keyboard_controller = keyboard.Controller()
@@ -48,6 +53,11 @@ class Macro_Baram_Cla():
         self.stop_button = None
         self.kingq_button = None
         self.auto_gongj_heal_button = None
+        self.auto_move_button = None
+        self.auto_pilot_button = None
+
+        ## 임시
+        self.auto_pilot_state = 0
         
     def _active_skill(self, skill_name, target_iter=1, reset_tap=False):
         """스킬 키 동작 수행"""
@@ -92,10 +102,10 @@ class Macro_Baram_Cla():
                 
     def _reset_tap(self):
         """리셋 키 동작 수행"""
-        delay = random.uniform(0.01, 0.01 + 0.001)
+        delay = random.uniform(0.01, 0.01 + 0.01)
         time.sleep(delay)
         self.keyboard_controller.release(keyboard.Key.shift)
-        for action_key in [keyboard.Key.esc, keyboard.Key.tab, keyboard.Key.home, keyboard.Key.esc]:
+        for action_key in [keyboard.Key.esc, keyboard.Key.tab, keyboard.Key.home, keyboard.Key.esc, keyboard.Key.esc]:
             time.sleep(delay)
             self.keyboard_controller.press(action_key)
             self.keyboard_controller.release(action_key)
@@ -119,9 +129,11 @@ class Macro_Baram_Cla():
                     self.skill_mapping[key]['direction'] = keyboard.Key.left
         
     def auto_gongj(self, run=False):
-        screenshot = pyautogui.screenshot(region=self.hpmp_region, allScreens=True)
-        mp_color = np.mean([screenshot.getpixel((round((1-x) * self.hpmp_region[2]),round(self.hpmp_region[3]*3/4))) for x in np.arange(self.mp_thres-0.1, self.mp_thres, 0.005)])
-        mp_color_low = np.mean([screenshot.getpixel((round((1-x) * self.hpmp_region[2]),round(self.hpmp_region[3]*3/4))) for x in np.arange(0.1, 0.2, 0.005)])
+        screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
+        screenshot = capture_and_crop(screenshot, self.hpmp_cut_region)
+        
+        mp_color = np.mean([screenshot.getpixel((round((1-x) * self.hpmp_cut_region[2]),round(self.hpmp_cut_region[3]*3/4))) for x in np.arange(self.mp_thres-0.1, self.mp_thres, 0.005)])
+        mp_color_low = np.mean([screenshot.getpixel((round((1-x) * self.hpmp_cut_region[2]),round(self.hpmp_cut_region[3]*3/4))) for x in np.arange(0.1, 0.2, 0.005)])
         while mp_color < 30:
             self.state['macro_pause'] = True
             if run and self.state['auto_gongj_heal']!='ON':
@@ -138,14 +150,16 @@ class Macro_Baram_Cla():
                     time.sleep(0.04)
                 self._active_skill(skill_name='gongj', target_iter=1)
                 self._active_skill(skill_name='heal', target_iter=1)
-                screenshot = pyautogui.screenshot(region=self.hpmp_region, allScreens=True)
-                mp_color = np.mean([screenshot.getpixel((round((1-x) * self.hpmp_region[2]),round(self.hpmp_region[3]*3/4))) for x in np.arange(self.mp_thres-0.1, self.mp_thres, 0.01)])
-                mp_color_low = np.mean([screenshot.getpixel((round((1-x) * self.hpmp_region[2]),round(self.hpmp_region[3]*3/4))) for x in np.arange(0.1, 0.2, 0.01)])
+                screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
+                screenshot = capture_and_crop(screenshot, self.hpmp_cut_region)
+                mp_color = np.mean([screenshot.getpixel((round((1-x) * self.hpmp_cut_region[2]),round(self.hpmp_cut_region[3]*3/4))) for x in np.arange(self.mp_thres-0.1, self.mp_thres, 0.01)])
+                mp_color_low = np.mean([screenshot.getpixel((round((1-x) * self.hpmp_cut_region[2]),round(self.hpmp_cut_region[3]*3/4))) for x in np.arange(0.1, 0.2, 0.01)])
         self.state['macro_pause'] = False
 
     def auto_heal(self, run=False):
-        screenshot = pyautogui.screenshot(region=self.hpmp_region, allScreens=True)
-        hp_color = np.mean([screenshot.getpixel((round((1-x) * self.hpmp_region[2]),round(self.hpmp_region[3]/4))) for x in np.arange(self.hp_thres-0.1, self.hp_thres, 0.005)])
+        screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
+        screenshot = capture_and_crop(screenshot, self.hpmp_cut_region)
+        hp_color = np.mean([screenshot.getpixel((round((1-x) * self.hpmp_cut_region[2]),round(self.hpmp_cut_region[3]/4))) for x in np.arange(self.hp_thres-0.1, self.hp_thres, 0.005)])
         while hp_color < 30:
             self.state['macro_pause'] = True
             if run and self.state['auto_gongj_heal']!='ON':
@@ -157,8 +171,9 @@ class Macro_Baram_Cla():
                 time.sleep(0.02)
                 self.keyboard_controller.press(keyboard.Key.esc)
                 self.keyboard_controller.release(keyboard.Key.esc)
-                screenshot = pyautogui.screenshot(region=self.hpmp_region, allScreens=True)
-                hp_color = np.mean([screenshot.getpixel((round((1-x) * self.hpmp_region[2]),round(self.hpmp_region[3]/4))) for x in np.arange(self.hp_thres-0.1, self.hp_thres, 0.005)])
+                screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
+                screenshot = capture_and_crop(screenshot, self.hpmp_cut_region)
+                hp_color = np.mean([screenshot.getpixel((round((1-x) * self.hpmp_cut_region[2]),round(self.hpmp_cut_region[3]/4))) for x in np.arange(self.hp_thres-0.1, self.hp_thres, 0.005)])
         self.state['macro_pause'] = False
     
     def auto_bomu(self):
@@ -259,15 +274,154 @@ class Macro_Baram_Cla():
             self.auto_gongj(run=True)
             self.auto_heal(run=True)
             time.sleep(0.05)
+
+    def target_move(self, cur_x, cur_y, coordinate_type, target_coordiante):
+        avoid_dict = {
+            keyboard.Key.left : [[keyboard.Key.down], [keyboard.Key.up], [keyboard.Key.right,keyboard.Key.down],[keyboard.Key.up],[keyboard.Key.right,keyboard.Key.up],[keyboard.Key.down]],
+            keyboard.Key.right : [[keyboard.Key.down], [keyboard.Key.up], [keyboard.Key.left,keyboard.Key.down],[keyboard.Key.up],[keyboard.Key.left,keyboard.Key.up],[keyboard.Key.down]],
+            keyboard.Key.down : [[keyboard.Key.right], [keyboard.Key.left], [keyboard.Key.up,keyboard.Key.right],[keyboard.Key.left],[keyboard.Key.up,keyboard.Key.right],[keyboard.Key.left]],
+            keyboard.Key.up : [[keyboard.Key.right], [keyboard.Key.left], [keyboard.Key.down,keyboard.Key.right],[keyboard.Key.left],[keyboard.Key.down,keyboard.Key.right],[keyboard.Key.left]],
+        }
+        if coordinate_type == 'x':
+            cur = cur_x
+        elif coordinate_type == 'y':
+            cur = cur_y
+        mi = 0
+        delay = random.uniform(0.3, 0.4)
+        move_dir = keyboard.Key.right
+        while cur != target_coordiante:
+            if not self.state['auto_move']:
+                raise
+            if cur < target_coordiante:
+                if coordinate_type == 'x':
+                    move_dir = keyboard.Key.right
+                elif coordinate_type == 'y':
+                    move_dir = keyboard.Key.down
+            elif cur > target_coordiante:
+                if coordinate_type == 'x':
+                    move_dir = keyboard.Key.left
+                elif coordinate_type == 'y':
+                    move_dir = keyboard.Key.up
+            self.keyboard_controller.press(move_dir)
+            screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
+            (x,y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region)
+
+            if cur_x != x or cur_y != y:
+                mi = 0
+            mi += 1
+
+            while mi >=10 and cur_x == x and cur_y == y:
+                for avoid_key_list in avoid_dict[move_dir]:
+                    # 방향전환 포함 2회
+                    for avoid_key in avoid_key_list:
+                        for _ in range(2):
+                            if not self.state['auto_move']:
+                                raise
+                            self.keyboard_controller.release(move_dir)
+                            self.keyboard_controller.press(avoid_key)
+                            self.keyboard_controller.release(avoid_key)
+                            time.sleep(delay)
+                    screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
+                    (x,y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region)
+                    if cur_x != x or cur_y != y:
+                        break
+                mi = 0
+            cur_x = x
+            cur_y = y
+
+            if coordinate_type == 'x':
+                cur = cur_x
+            elif coordinate_type == 'y':
+                cur = cur_y
+
+        self.keyboard_controller.release(move_dir)
+        
+        return (cur_x, cur_y)
+
+    def auto_move(self):
+        delay = random.uniform(0.25, 0.35)
+        auto_g = 0
+        while self.state['auto_move']:
+            screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
+            (cur_x, cur_y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region)
+
+            if self.state['move_type'] == 'out_palace':
+                # 왕궁 나기기
+                if self.state['auto_gongj_heal'] == 'ON':
+                    self.start_auto_gongj_heal()
+                    auto_g = 1
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordiante=9)
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordiante=37)
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordiante=12) 
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordiante=38)
+                for _ in range(3):
+                    self.keyboard_controller.press(keyboard.Key.down)
+                    self.keyboard_controller.release(keyboard.Key.down)
+                    time.sleep(delay)
+                if auto_g == 1:
+                    self.start_auto_gongj_heal()
+                self.start_auto_move()
+
+            elif self.state['move_type'] == 'go_palace':
+                # 왕궁 복귀
+                if self.state['auto_gongj_heal'] == 'ON':
+                    self.start_auto_gongj_heal()
+                    auto_g = 1
+                self._active_skill('north')
+                screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
+                (cur_x, cur_y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region)
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordiante=73)
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordiante=42)
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordiante=57)
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordiante=62)
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordiante=72)
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordiante=53)
+                while cur_x > 20:
+                    self.keyboard_controller.press(keyboard.Key.up)
+                    self.keyboard_controller.release(keyboard.Key.up)
+                    time.sleep(delay)
+                    screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
+                    (cur_x, cur_y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region)
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordiante=12)
+                if auto_g == 1:
+                    self.start_auto_gongj_heal()
+                self.start_auto_move()
+
+            elif self.state['move_type'] == 'go_haunted_house':
+                # 흉가 이동
+                if self.state['auto_gongj_heal'] == 'ON':
+                    self.start_auto_gongj_heal()
+                    auto_g = 1
+                self._active_skill('south')
+                screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
+                (cur_x, cur_y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region)
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordiante=145)
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordiante=68)
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordiante=125)
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordiante=68)
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordiante=123)
+                if auto_g == 1:
+                    self.start_auto_gongj_heal()
+                self.start_auto_move()
+
+    def change_move_type(self):
+        if self.state['move_type'] == 'out_palace':
+            self.state['move_type'] = 'go_haunted_house'
+        elif self.state['move_type'] == 'go_haunted_house':
+            self.state['move_type'] = 'go_palace'
+        elif self.state['move_type'] == 'go_palace':
+            self.state['move_type'] = 'out_palace'
                     
     def auto_king_q(self):
         while self.state['kingq']:
-            delay = random.uniform(0.01, 0.001)
-            phase = 1
-            self.start_auto_gongj_heal()
+            delay = random.uniform(0.05, 0.001)
+            auto_g = 0
+            if self.state['auto_gongj_heal'] == 'ON':
+                auto_g = 1
+                self.start_auto_gongj_heal()
             while True:
                 screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
-                king_coord = image_detection(screenshot, ['king.png'], 0.7, show=False)
+                king_coord = image_detection(screenshot, ['./image/king.png'], 0.6, show=False)
 
                 if len(king_coord) == 0:
                     time.sleep(0.5)
@@ -280,7 +434,7 @@ class Macro_Baram_Cla():
                     pyautogui.click()
                     pyautogui.moveTo(self.game_region[0], self.game_region[1], duration=0.1)  # 마우스 이동 (0.5초 동안 이동)
 
-                    extracted_text = extract_text_from_image(self.game_region, cut_region=self.kingq_region_cut, config=r'--oem 1 --psm 6')
+                    extracted_text = extract_text_from_image(self.game_region, cut_region=self.kingq_cut_region, config=r'--oem 1 --psm 6')
                     extracted_text = extracted_text.replace(' ','')
 
                     # 퀘스트 완료 후
@@ -292,60 +446,89 @@ class Macro_Baram_Cla():
                             time.sleep(1)
                             pyautogui.moveTo(target_x, target_y, duration=0.1)  # 마우스 이동 (0.5초 동안 이동)
                             pyautogui.click()
-                            pyautogui.moveTo(self.game_region[0]/0.8, self.game_region[1]/0.8-1350, duration=0.1)  # 마우스 이동 (0.5초 동안 이동)
-                            extracted_text = extract_text_from_image(self.game_region, cut_region=self.kingq_region_cut, config=r'--oem 1 --psm 6')
+                            pyautogui.moveTo(self.game_region[0], self.game_region[1], duration=0.1)  # 마우스 이동 (0.5초 동안 이동)
+                            extracted_text = extract_text_from_image(self.game_region, cut_region=self.kingq_cut_region, config=r'--oem 1 --psm 6')
                             extracted_text = extracted_text.replace(' ','')
 
                     # 퀘스트 시작
-                    if phase == 1:
-                        for ti, text in enumerate(self.kings_speech[:4]):
-                            if not self.state['kingq']:
-                              raise
-                            while text in extracted_text:
-                                if ti == 2:
-                                    for _ in range(50):
-                                        self.keyboard_controller.press(keyboard.Key.left)
-                                        self.keyboard_controller.release(keyboard.Key.left)
-                                        time.sleep(delay)
-                                if ti == 3:
-                                    self.target_monster = extracted_text.split('!')[1].split('을')[0].strip()
-                                    self.kings_speech[4] = self.target_monster
-                                    phase = 2
-                                self.keyboard_controller.press(keyboard.Key.enter)
-                                self.keyboard_controller.release(keyboard.Key.enter)
-                                time.sleep(delay)
-                                extracted_text = extract_text_from_image(self.game_region, cut_region=self.kingq_region_cut, config=r'--oem 1 --psm 6')
-                                extracted_text = extracted_text.replace(' ','')
-
-                        self.keyboard_controller.release(keyboard.Key.esc)
-                        if self.target_monster in self.kingq_wish:
+                    for _ in range(10):
+                        print(extracted_text[:10])
+                        if not self.state['kingq']:
+                            raise
+                        p = 0
+                        # print(extracted_text[:10])
+                        for speech in self.kings_speech:
+                            if speech in extracted_text:
+                                p = 1
+                        if p == 0:
                             break
+                            
+                        if '어명이오!' in extracted_text:
+                            self.target_monster = extracted_text.split('!')[1].split('을')[0].strip()
+                            break
+                        if '지워졌으니' in extracted_text:
+                            self.target_monster = 'Nobody'
+                            break
+                        for __ in range(1):
+                            self.keyboard_controller.press(keyboard.Key.right)
+                            self.keyboard_controller.release(keyboard.Key.right)
+                            time.sleep(delay)
+                            self.keyboard_controller.press(keyboard.Key.left)
+                            self.keyboard_controller.release(keyboard.Key.left)
+                            time.sleep(delay)
+                        self.keyboard_controller.press(keyboard.Key.enter)
+                        self.keyboard_controller.release(keyboard.Key.enter)
+                        time.sleep(delay)
 
-                    elif phase == 2:
-                        for ti, text in enumerate(self.kings_speech[4:]):
-                            if not self.state['kingq']:
-                              raise
-                            while text in extracted_text:
-                                if ti == 1:
-                                    for _ in range(50):
-                                        self.keyboard_controller.press(keyboard.Key.left)
-                                        self.keyboard_controller.release(keyboard.Key.left)
-                                        time.sleep(delay)
-                                if ti == 3:
-                                    self.target_monster = 'Nobody'
-                                    phase = 1
-                                self.keyboard_controller.press(keyboard.Key.enter)
-                                self.keyboard_controller.release(keyboard.Key.enter)
-                                time.sleep(delay)
-                                extracted_text = extract_text_from_image(self.game_region, cut_region=self.kingq_region_cut, config=r'--oem 1 --psm 6')   
-                                extracted_text = extracted_text.replace(' ','')
-                    time.sleep(delay)
+                        extracted_text = extract_text_from_image(self.game_region, cut_region=self.kingq_cut_region, config=r'--oem 1 --psm 6')
+                        extracted_text = extracted_text.replace(' ','')
+
                     self.keyboard_controller.press(keyboard.Key.esc)
                     self.keyboard_controller.release(keyboard.Key.esc)
+
+                    if self.target_monster in self.kingq_wish:
+                        break
                     
             self.state['kingq'] = False
             self.kingq_button.config(state=tk.NORMAL)
-            self.start_auto_gongj_heal()
+            if auto_g == 1:
+                self.start_auto_gongj_heal()
+
+    def auto_pilot(self):
+        delay = random.uniform(0.3, 0.4)
+        while self.state['auto_pilot']:
+            if self.auto_pilot_state == 0:
+                # 왕퀘 받기
+                self.state['kingq'] = True
+                self.target_monster = 'Nobody'
+                self.auto_king_q()
+                time.sleep(delay)
+                self.state['move_type'] = 'out_palace'
+                self.state['auto_move'] = True
+                self.auto_move()
+                time.sleep(delay)
+                self.state['move_type'] = 'go_haunted_house'
+                self.state['auto_move'] = True
+                self.auto_move()
+                time.sleep(delay)
+                self._active_skill(skill_name='boho', target_iter=1)
+                self._active_skill(skill_name='muzang', target_iter=1)
+                time.sleep(delay)
+                # for _ in range(2):
+                #     self.keyboard_controller.press(keyboard.Key.up)
+                #     self.keyboard_controller.release(keyboard.Key.up)
+                #     time.sleep(delay)
+                self.auto_pilot_state = 1
+                self.start_auto_pilot()
+                
+            elif self.auto_pilot_state == 1:
+                # 왕퀘로 복귀
+                self.state['move_type'] = 'go_palace'
+                self.state['auto_move'] = True
+                self.auto_move()
+                time.sleep(delay)
+                self.auto_pilot_state = 0
+                # self.start_auto_pilot()
 
     def start_macro(self):
         """매크로 시작"""
@@ -382,6 +565,28 @@ class Macro_Baram_Cla():
         else:
             self.state['auto_gongj_heal'] = 'OFF'
             self.state['marco_pause'] = False
+
+    def start_auto_move(self):
+        if not self.state['auto_move']:
+            self.state['auto_move'] = True
+            ammacro = threading.Thread(target=self.auto_move, daemon=True)
+            ammacro.start()
+            self.auto_move_button.config(state=tk.DISABLED)
+        else:
+            self.state['auto_move'] = False
+            self.auto_move_button.config(state=tk.NORMAL)
+
+    def start_auto_pilot(self):
+        if not self.state['auto_pilot']:
+            self.state['auto_pilot'] = True
+            apmacro = threading.Thread(target=self.auto_pilot, daemon=True)
+            apmacro.start()
+            self.auto_pilot_button.config(state=tk.DISABLED)
+        else:
+            self.state['auto_pilot'] = False
+            for key in ['macro_running', 'kingq', 'macro_pause', 'auto_move', 'auto_pilot']:
+                self.state[key] = False
+            self.auto_pilot_button.config(state=tk.NORMAL)
                                 
     def on_press(self, key):
         """키 입력 감지"""
@@ -417,16 +622,25 @@ class Macro_Baram_Cla():
                 self.stop_macro()
                 print(f"macro_type change: {self.state['macro_type']}")
 
-            elif key.char == 'P':
-                self.state['macro_type'] = 'poison'
-                self.stop_macro()
-                print(f"macro_type change: {self.state['macro_type']}")
+            # elif key.char == 'P':
+            #     self.state['macro_type'] = 'poison'
+            #     self.stop_macro()
+            #     print(f"macro_type change: {self.state['macro_type']}")
+
+            elif key.char == 'M':
+                self.start_auto_move()
+
+            elif key.char == 'N':
+                self.change_move_type()
 
             elif key.char == '{':
                 self.start_auto_gongj_heal()
                 
             elif key.char == '}':
                 self.start_kingq()
+
+            elif key.char == 'P':
+                self.start_auto_pilot()
                 
         except AttributeError:
             pass
@@ -435,6 +649,7 @@ class Macro_Baram_Cla():
         self.type_label.config(text=f"TYPE: {self.state['macro_type']}")  # Label의 텍스트 업데이트
         self.king_label.config(text=f"KING: {self.target_monster}")  # Label의 텍스트 업데이트
         self.gongj_heal_label.config(text=f"A G/H : {self.state['auto_gongj_heal']}")
+        self.move_type_label.config(text=f"MOVE : {self.state['move_type']}")
         self.type_label.after(100, self.update_label)  # 1000ms(1초) 후에 다시 실행
         # self.king_label.after(100, self.update_label)  # 1000ms(1초) 후에 다시 실행
                                 
@@ -472,6 +687,15 @@ class Macro_Baram_Cla():
         
         self.kingq_button = tk.Button(self.root, text="왕퀘 자동 받기", command=self.start_kingq, width=bwidth, font=("Arial", label_font))
         self.kingq_button.grid(row=6, column=0, sticky="w", padx=pad, pady=pad)
+
+        self.auto_move_button = tk.Button(self.root, text="자동 이동", command=self.start_kingq, width=bwidth, font=("Arial", label_font))
+        self.auto_move_button.grid(row=7, column=0, sticky="w", padx=pad, pady=pad)
+
+        self.move_type_label = tk.Label(self.root, text="MOVE", font=("Arial", label_font))
+        self.move_type_label.grid(row=8, column=0, sticky="w", padx=pad, pady=pad)
+
+        self.auto_pilot_button = tk.Button(self.root, text="오토파일럿", command=self.start_auto_pilot, width=bwidth, font=("Arial", label_font))
+        self.auto_pilot_button.grid(row=9, column=0, sticky="w", padx=pad, pady=pad)
         
         self.update_label()
 
