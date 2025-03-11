@@ -91,8 +91,11 @@ def image_detection(screenshot, image_path_list, confidence=0.8, merge_thres=20,
     return coordinates
 
 def extract_text_from_image(region, cut_region=(360,190,290,230), config=r'--oem 1 --psm 6'):
-    screenshot = pyautogui.screenshot(region=region, allScreens=True)
-    screenshot_cut = capture_and_crop(screenshot, cut_region)
+    if type(region) == Image.Image:
+        screenshot_cut = region
+    else:
+        screenshot = pyautogui.screenshot(region=region, allScreens=True)
+        screenshot_cut = capture_and_crop(screenshot, cut_region)
     screenshot_np = np.array(screenshot_cut)
     screenshot_gray = cv2.cvtColor(screenshot_np, cv2.COLOR_BGR2GRAY)
     extracted_text = pytesseract.image_to_string(screenshot_gray, lang='kor', config=config)
