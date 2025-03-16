@@ -19,12 +19,13 @@ class Macro_Baram_Cla():
         self.right_coord_cut_region = (1082, 850, 75, 23)
 
         self.kings_speech = ['무례', '폐하께', '임무', '무서', '어요', '어명이오', '네이놈', '아직', '다시', '취소', '형벌', '받든']
-        self.kingq_wish = ['처녀귀신', '불귀신', '달갈귀신', '달갤귀신']
+        # self.kingq_wish = ['처녀귀신', '불귀신', '달갈귀신', '달갤귀신']
+        self.kingq_wish = ['처녀귀신']
         self.state = {'macro_running': False, 'macro_type':'auto_hunt', 'mode': 'normal', 'kingq':False, 'auto_gongj_heal':'OFF', 'macro_pause':False, 'auto_move':False, 'move_type':'out_palace', 'auto_pilot': False} 
         self.skill_mapping = {
             'mabi' : {'skk':'1', 'delay':0.02, 'direction':keyboard.Key.left},
             'curse' : {'skk':'2', 'delay':0.02, 'direction':keyboard.Key.left},
-            'heal': {'skk':'3', 'delay':0.01, 'direction':keyboard.Key.home},
+            'heal': {'skk':'3', 'delay':0.005, 'direction':keyboard.Key.home},
             'attack': {'skk':'4', 'delay':0.2, 'direction':keyboard.Key.left},
             'gongj': {'skk':'5', 'delay':0.05, 'direction':None},
             'attack_chum': {'skk':'6', 'delay':0.5, 'direction':None},
@@ -59,7 +60,7 @@ class Macro_Baram_Cla():
         ## 임시
         self.auto_pilot_state = 0
         
-    def _active_skill(self, skill_name, target_iter=1, reset_tap=False):
+    def _active_skill(self, skill_name, target_iter=1, reset_tap=False, mouse_target=None):
         """스킬 키 동작 수행"""
         if not (type(skill_name) == list):
             skill_name = [skill_name]
@@ -80,25 +81,33 @@ class Macro_Baram_Cla():
                 time.sleep(delay)
                 self.keyboard_controller.press(self.skill_mapping[skill_name_]['skk'])
                 self.keyboard_controller.release(self.skill_mapping[skill_name_]['skk'])
-
-                if self.skill_mapping[skill_name_]['direction'] is None:
-                    pass
-                else:
-                    if target_i == 0 and si == 0:
-                        time.sleep(delay)
-                        if reset_tap:
-                            self.keyboard_controller.press(keyboard.Key.home)
-                            self.keyboard_controller.release(keyboard.Key.home)   
+                if mouse_target is None:
+                    if self.skill_mapping[skill_name_]['direction'] is None:
+                        pass
+                    else:
+                        if target_i == 0 and si == 0:
                             time.sleep(delay)
-                        self.keyboard_controller.press(self.skill_mapping[skill_name_]['direction'])
-                        self.keyboard_controller.release(self.skill_mapping[skill_name_]['direction'])
-
+                            if reset_tap:
+                                self.keyboard_controller.press(keyboard.Key.home)
+                                self.keyboard_controller.release(keyboard.Key.home)   
+                                time.sleep(delay)
+                            self.keyboard_controller.press(self.skill_mapping[skill_name_]['direction'])
+                            self.keyboard_controller.release(self.skill_mapping[skill_name_]['direction'])
+    
+                        time.sleep(delay)
+                        self.keyboard_controller.press(keyboard.Key.enter)
+                        self.keyboard_controller.release(keyboard.Key.enter)
+                        time.sleep(delay)
+                        self.keyboard_controller.press(keyboard.Key.esc)
+                        self.keyboard_controller.release(keyboard.Key.esc)
+                else:
+                    time.sleep(delay)
+                    pyautogui.moveTo(mouse_target[0], mouse_target[1], duration=self.skill_mapping[skill_name_]['delay'])
+                    time.sleep(delay)
+                    pyautogui.click()
                     time.sleep(delay)
                     self.keyboard_controller.press(keyboard.Key.enter)
                     self.keyboard_controller.release(keyboard.Key.enter)
-                    time.sleep(delay)
-                    self.keyboard_controller.press(keyboard.Key.esc)
-                    self.keyboard_controller.release(keyboard.Key.esc)
                 
     def _reset_tap(self):
         """리셋 키 동작 수행"""
@@ -322,7 +331,7 @@ class Macro_Baram_Cla():
                 mi = 0
             mi += 1
 
-            while mi >=5 and ((coordinate_type == 'x' and cur_x == x) or (coordinate_type == 'y' and cur_y == y)):
+            while mi >= 8 and ((coordinate_type == 'x' and cur_x == x) or (coordinate_type == 'y' and cur_y == y)):
                 for avoid_key_list in avoid_dict[move_dir]:
                     # 방향전환 포함 2회
                     for avoid_key in avoid_key_list:
@@ -367,8 +376,9 @@ class Macro_Baram_Cla():
                     auto_g = 1
                 # (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=9)
                 (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=35)
-                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=[12,17]) 
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=[12,17])  
                 (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=38)
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=[12,17])
                 for _ in range(3):
                     self.keyboard_controller.press(keyboard.Key.down)
                     self.keyboard_controller.release(keyboard.Key.down)
@@ -388,6 +398,7 @@ class Macro_Baram_Cla():
                 (cur_x, cur_y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region)
                 (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=[73,75])
                 (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=42)
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=[73,75])
                 (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=58)
                 (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=60)
                 (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=[71,74])
@@ -419,7 +430,7 @@ class Macro_Baram_Cla():
                 (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=[145,147])
                 (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=68)
                 (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=125)
-                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=68)
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=[68,70])
                 (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=123)
                 if auto_g == 1:
                     self.start_auto_gongj_heal()
@@ -606,6 +617,8 @@ class Macro_Baram_Cla():
             elif key.char == 'A':
                 self._active_skill(skill_name='boho', target_iter=1)
                 self._active_skill(skill_name='muzang', target_iter=1)
+            elif key.char == 'P':
+                self.start_auto_pilot()
 
         except AttributeError:
             pass
@@ -627,9 +640,6 @@ class Macro_Baram_Cla():
                 
             elif key.char == '}':
                 self.start_kingq()
-
-            elif key.char == 'P':
-                self.start_auto_pilot()
                 
         except AttributeError:
             pass

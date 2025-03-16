@@ -62,7 +62,7 @@ def merge_close_coordinates(coordinates, threshold=20):
 
     return merged_coords
 
-def image_detection(screenshot, image_path_list, confidence=0.8, merge_thres=20, show=False):
+def image_detection(screenshot, image_path_list, confidence=0.8, merge_thres=20, show=False, location='center'):
     screenshot_np = np.array(screenshot)  # PIL 이미지를 NumPy 배열로 변환 (BGR 형식)
     screenshot_np = cv2.cvtColor(screenshot_np, cv2.COLOR_RGB2BGR)  # RGB → BGR 변환
     
@@ -79,7 +79,10 @@ def image_detection(screenshot, image_path_list, confidence=0.8, merge_thres=20,
         coordinate = merge_close_coordinates(coordinate, threshold=merge_thres)
         for coordinate_ in coordinate:
             # coordinates.append(coordinate_)
-            coordinates.append((round(coordinate_[0] + w // 2), round(coordinate_[1] + h // 2)))
+            if location == 'center':
+                coordinates.append((round(coordinate_[0] + w // 2), round(coordinate_[1] + h // 2)))
+            elif location == 'bottom':
+                coordinates.append((round(coordinate_[0] + w // 2), round(coordinate_[1] + h)))
         
     if show:
         for pt in coordinates:
@@ -104,7 +107,7 @@ def extract_text_from_image(region, cut_region=(360,190,290,230), config=r'--oem
 def find_coordinate(coordinate_screenshot, confidence=0.7, merge_thres=5, width=75):
     coordinate = [0,0,0,0]
     for i in range(10):
-        coord = image_detection(coordinate_screenshot, [f'./image/num{i}.png'], confidence, merge_thres, show=False)
+        coord = image_detection(screenshot=coordinate_screenshot, image_path_list=[f'./image/num{i}.png'], confidence=confidence, merge_thres=merge_thres, show=False, location='center')
         for x,y in coord:
             if x/width <= 0.25:
                 coordinate[0] = i
