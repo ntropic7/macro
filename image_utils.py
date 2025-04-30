@@ -83,6 +83,8 @@ def image_detection(screenshot, image_path_list, confidence=0.8, merge_thres=20,
                 coordinates.append((round(coordinate_[0] + w // 2), round(coordinate_[1] + h // 2)))
             elif location == 'bottom':
                 coordinates.append((round(coordinate_[0] + w // 2), round(coordinate_[1] + h)))
+            elif location == 'left_top':
+                coordinates.append((round(coordinate_[0]), round(coordinate_[1])))
         
     if show:
         for pt in coordinates:
