@@ -25,14 +25,15 @@ class Macro_Baram_Cla():
             raise        
         self.game_region = (game_left_top[0][0], game_left_top[0][1], 1200, 900)
         self.hpmp_cut_region = (1002, 750, 172, 50)
-        self.kingq_cut_region = (320, 220, 400, 300)
+        # self.kingq_cut_region = (320, 220, 400, 300)
         self.left_coord_cut_region = (999, 850, 75, 23)
         self.right_coord_cut_region = (1082, 850, 75, 23)
         self.game_screen_region = (25,20,765,675)
+        self.message_region = (820,565,345,123)
 
         self.kings_speech = ['무례', '폐하께', '임무', '무서', '어요', '어명이오', '네이놈', '아직', '다시', '취소', '형벌', '받든']
-        self.kingq_wish = ['처녀귀신', '불귀신', '달갈귀신', '달갤귀신']
-        # self.kingq_wish = ['처녀귀신']
+        # self.kingq_wish = ['처녀귀신', '불귀신', '달갈귀신', '달갤귀신']
+        self.kingq_wish = ['처녀귀신']
         self.state = {'macro_running': False, 'macro_type':'auto_hunt', 'mode': 'normal', 'kingq':False, 'auto_gongj_heal':'OFF', 'macro_pause':False, 'auto_move':False, 'move_type':'out_palace', 'auto_pilot': False} 
         self.skill_mapping = {
             'mabi' : {'skk':'1', 'delay':0.02, 'direction':keyboard.Key.left},
@@ -42,7 +43,7 @@ class Macro_Baram_Cla():
             'gongj': {'skk':'5', 'delay':0.05, 'direction':None},
             'attack_chum': {'skk':'6', 'delay':0.5, 'direction':None},
             'poison': {'skk':'7', 'delay':0.02, 'direction':keyboard.Key.left},
-            'hellfire': {'skk':'9', 'delay':0.5, 'direction':keyboard.Key.left},
+            'hellfire': {'skk':'9', 'delay':0.1, 'direction':keyboard.Key.left},
             'boho': {'skk':'x', 'delay':0.1, 'direction':keyboard.Key.home},
             'muzang': {'skk':'z', 'delay':0.1, 'direction':keyboard.Key.home},
             'east':  {'skk':'m', 'delay':0.1, 'direction':'1'},
@@ -55,7 +56,7 @@ class Macro_Baram_Cla():
         self.mouse_controller = mouse.Controller()
         self.keyboard_controller = keyboard.Controller()
         
-        self.mp_thres = 0.5
+        self.mp_thres = 0.7
         self.hp_thres = 0.7
         self.skill_done = 1
         self.bomu_time = time.time() - 999
@@ -190,7 +191,7 @@ class Macro_Baram_Cla():
         mp_color = np.mean([screenshot.getpixel((round((1-x) * self.hpmp_cut_region[2]),round(self.hpmp_cut_region[3]*3/4))) for x in np.arange(self.mp_thres-0.1, self.mp_thres, 0.005)])
         while hp_color < 30:
             if mp_color < 30:
-                self.auto_gongj(run=True)
+                self.auto_gongj(run=False)
             self.state['macro_pause'] = True
             if run and self.state['auto_gongj_heal']!='ON':
                 self.state['macro_pause'] = False
@@ -295,63 +296,85 @@ class Macro_Baram_Cla():
         self.mabi_time = time.time() - 999
         while self.state['macro_running']:
             if self.state['macro_type'] == 'auto_hunt':
-                self.skill_mapping['mabi']['delay']=0.03
+                self.skill_mapping['mabi']['delay']=0.035
                 # self.skill_mapping['poison']['delay']=0.015
                 self.skill_mapping['curse']['delay']=0.02
-                self.skill_mapping['attack']['delay']=0.3
                 macro_type = 'auto_hunt'
 
                 screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
                 game_screen = capture_and_crop(screenshot, self.game_screen_region)
-                cn = image_detection(game_screen, image_path_list=['./image/cn_back.png', './image/cn_left.png', './image/cn_right.png', './image/cn_front.png'], confidence=0.7, merge_thres=45, show=False, location='bottom')
-                print(len(cn))
-                if len(cn) > 0:
+                me = image_detection(game_screen, image_path_list=['./image/me_back.png', './image/me_left.png', './image/me_right.png', './image/me_front.png'], confidence=0.65, merge_thres=45, show=False, location='center') 
+                cn = image_detection(game_screen, image_path_list=['./image/cn_back.png', './image/cn_left.png', './image/cn_right.png', './image/cn_front.png'], confidence=0.7, merge_thres=45, show=False, location='center')
+                if len(me) == 0:
+                    continue
+                me_x, me_y = (me[0][0]//45 + 1, me[0][1]//45 + 1)
+                avail_cn = [(x, y) for (x, y) in cn if abs((x//45+1) - (me[0][0]//45+1)) <= 9 and abs((y//45+1) - (me[0][1]//45+1)) <= 8]
+                
+                print(len(avail_cn))
+                if len(avail_cn) > 0:
                     self.state['auto_move'] = False
-                    if self.state['auto_gongj_heal'] == 'OFF':
-                        self.start_auto_gongj_heal()
-                    self.active_spell_auto(skill_name='mabi', macro_type=macro_type, target_iter=[1], active_iter=8, change_dir=True, auto_bomu=False, auto_mabi=False)
-                    self._reset_tap()
-                    time.sleep(random.uniform(0.1, 0.1 + 0.01))
-                    self.keyboard_controller.press(keyboard.Key.esc)
-                    self.keyboard_controller.release(keyboard.Key.esc)
+                    self.active_spell_auto(skill_name='mabi', macro_type=macro_type, target_iter=[1], active_iter=10, change_dir=True, auto_bomu=False, auto_mabi=False)
 
-                    self.active_spell_auto(skill_name='curse', macro_type=macro_type, target_iter=[8], active_iter=1, change_dir=False, auto_bomu=False, auto_mabi=False, direction=keyboard.Key.home)
-                    cn_target = 0
-                    for _ in range(5):
-                        if not self.state['macro_running'] or not self.state['macro_type']==macro_type:
-                            self._reset_tap()
-                            time.sleep(random.uniform(0.1, 0.1 + 0.01))
-                            self.keyboard_controller.press(keyboard.Key.esc)
-                            self.keyboard_controller.release(keyboard.Key.esc)
-                            print('macro stop')
-                            raise
-                        self.active_spell_auto(skill_name='tab', macro_type=macro_type, target_iter=[1], active_iter=1, change_dir=False, auto_bomu=False, auto_mabi=False, direction=keyboard.Key.left)
-                        time.sleep(0.1)
-                        extracted_text = extract_text_from_image(self.game_region, cut_region=(820,565,345,123), config=r'--oem 1 --psm 6')
-                        extracted_text = extracted_text.replace(' ','')
-                        print(extracted_text)
-                        if '처녀' in extracted_text:
-                            cn_target = 1
-                            break
-                    if cn_target == 1:
+                    me = image_detection(game_screen, image_path_list=['./image/me_back.png', './image/me_left.png', './image/me_right.png', './image/me_front.png'], confidence=0.65, merge_thres=45, show=False, location='center') 
+                    cn = image_detection(game_screen, image_path_list=['./image/cn_back.png', './image/cn_left.png', './image/cn_right.png', './image/cn_front.png'], confidence=0.7, merge_thres=45, show=False, location='center')
+                    if len(me) == 0:
+                        continue
+                    me_x, me_y = (me[0][0]//45 + 1, me[0][1]//45 + 1)
+                    avail_cn = [(x, y) for (x, y) in cn if abs((x//45+1) - (me[0][0]//45+1)) <= 9 and abs((y//45+1) - (me[0][1]//45+1)) <= 8]
+
+                    nearest_x, nearest_y = (0, 0)
+                    dist = 10000
+                    for x,y in avail_cn:
+                        n_dist = abs(me[0][0] - x) + abs(me[0][1] - y)
+                        if n_dist < dist:
+                            dist = n_dist
+                            nearest_x, nearest_y = (x, y)
+                    target_x = self.game_region[0] + self.game_screen_region[0] + nearest_x
+                    target_y = self.game_region[1] + self.game_screen_region[1] + nearest_y
+                    if not self.state['macro_running'] or not self.state['macro_type']==macro_type:
+                        print('macro stop')
+                        raise
+                    self.active_spell_auto(skill_name='tab', macro_type=macro_type, target_iter=[1], active_iter=1, change_dir=False, auto_bomu=False, auto_mabi=False, mouse_target=(target_x, target_y))
+                    time.sleep(0.1)
+                    extracted_text = extract_text_from_image(self.game_region, cut_region=self.message_region, config=r'--oem 1 --psm 6')
+                    extracted_text = extracted_text.replace(' ','')
+                    print(extracted_text)
+                    if '처녀' in extracted_text:
                         self.active_spell_auto(skill_name='curse', macro_type=macro_type, target_iter=[1], active_iter=1, change_dir=False, auto_bomu=False, auto_mabi=False, direction='stay')
-                        self.active_spell_auto(skill_name='poison', macro_type=macro_type, target_iter=[1], active_iter=1, change_dir=False, auto_bomu=False, auto_mabi=False, direction='stay')
                         self.active_spell_auto(skill_name='hellfire', macro_type=macro_type, target_iter=[1], active_iter=1, change_dir=False, auto_bomu=False, auto_mabi=False, direction='stay')
-                        time.sleep(1)
-                        self.active_spell_auto(skill_name='attack', macro_type=macro_type, target_iter=[1], active_iter=1, change_dir=False, auto_bomu=False, auto_mabi=False, direction=keyboard.Key.left)
-                        self.active_spell_auto(skill_name='poison', macro_type=macro_type, target_iter=[1], active_iter=1, change_dir=False, auto_bomu=False, auto_mabi=False, direction='stay')
-                        self.active_spell_auto(skill_name='attack', macro_type=macro_type, target_iter=[1], active_iter=1, change_dir=False, auto_bomu=False, auto_mabi=False, direction='stay')
-                        self.active_spell_auto(skill_name='poison', macro_type=macro_type, target_iter=[1], active_iter=1, change_dir=False, auto_bomu=False, auto_mabi=False, direction='stay')
-                        self.active_spell_auto(skill_name='attack', macro_type=macro_type, target_iter=[1], active_iter=1, change_dir=False, auto_bomu=False, auto_mabi=False, direction='stay')
-                        self.active_spell_auto(skill_name='poison', macro_type=macro_type, target_iter=[1], active_iter=1, change_dir=False, auto_bomu=False, auto_mabi=False, direction='stay')
-                        self.active_spell_auto(skill_name='attack', macro_type=macro_type, target_iter=[1], active_iter=1, change_dir=False, auto_bomu=False, auto_mabi=False, direction='stay')
-                        self.active_spell_auto(skill_name='poison', macro_type=macro_type, target_iter=[1], active_iter=1, change_dir=False, auto_bomu=False, auto_mabi=False, direction='stay')
-                        self.active_spell_auto(skill_name='attack', macro_type=macro_type, target_iter=[1], active_iter=1, change_dir=False, auto_bomu=False, auto_mabi=False, direction='stay')
-                        self.active_spell_auto(skill_name='poison', macro_type=macro_type, target_iter=[1], active_iter=1, change_dir=False, auto_bomu=False, auto_mabi=False, direction='stay')
-                        self.active_spell_auto(skill_name='attack', macro_type=macro_type, target_iter=[1], active_iter=1, change_dir=False, auto_bomu=False, auto_mabi=False, direction='stay')
-                        self.active_spell_auto(skill_name='hellfire', macro_type=macro_type, target_iter=[1], active_iter=1, change_dir=False, auto_bomu=False, auto_mabi=False, direction='stay')
+                        time.sleep(5)
                         
-                        
+                    # self._reset_tap()
+                    # time.sleep(random.uniform(0.1, 0.1 + 0.01))
+                    # self.keyboard_controller.press(keyboard.Key.esc)
+                    # self.keyboard_controller.release(keyboard.Key.esc)
+
+                    # self.active_spell_auto(skill_name='curse', macro_type=macro_type, target_iter=[5], active_iter=1, change_dir=False, auto_bomu=False, auto_mabi=False, direction=keyboard.Key.home)
+                    # cn_target = 0
+                    # for _ in range(5):
+                    #     if not self.state['macro_running'] or not self.state['macro_type']==macro_type:
+                    #         self._reset_tap()
+                    #         time.sleep(random.uniform(0.1, 0.1 + 0.01))
+                    #         self.keyboard_controller.press(keyboard.Key.esc)
+                    #         self.keyboard_controller.release(keyboard.Key.esc)
+                    #         print('macro stop')
+                    #         raise
+                    #     self.active_spell_auto(skill_name='tab', macro_type=macro_type, target_iter=[1], active_iter=1, change_dir=False, auto_bomu=False, auto_mabi=False, direction=keyboard.Key.left)
+                    #     time.sleep(0.1)
+                    #     extracted_text = extract_text_from_image(self.game_region, cut_region=self.message_region, config=r'--oem 1 --psm 6')
+                    #     extracted_text = extracted_text.replace(' ','')
+                    #     print(extracted_text)
+                    #     if '처녀' in extracted_text:
+                    #         self.active_spell_auto(skill_name='curse', macro_type=macro_type, target_iter=[1], active_iter=1, change_dir=False, auto_bomu=False, auto_mabi=False, direction='stay')
+                    #         self.active_spell_auto(skill_name='poison', macro_type=macro_type, target_iter=[1], active_iter=1, change_dir=False, auto_bomu=False, auto_mabi=False, direction='stay')
+                    #         self.active_spell_auto(skill_name='hellfire', macro_type=macro_type, target_iter=[1], active_iter=1, change_dir=False, auto_bomu=False, auto_mabi=False, direction='stay')
+                    #         time.sleep(0.2)
+                    #         extracted_text = extract_text_from_image(self.game_region, cut_region=self.message_region, config=r'--oem 1 --psm 6')
+                    #         extracted_text = extracted_text.replace(' ','')
+                    #         print(extracted_text)
+                    #         if '경험치' in extracted_text:
+                    #             break
+                    # self.stop_macro()
                     
             elif self.state['macro_type']=='mabi':
                 self.skill_mapping['mabi']['delay']=0.02
@@ -361,16 +384,40 @@ class Macro_Baram_Cla():
             elif self.state['macro_type']=='weapon':
                 self.skill_mapping['mabi']['delay']=0.07
                 macro_type = 'weapon'
-                self.active_spell_auto(skill_name='weapon', macro_type=macro_type, target_iter=[1], active_iter=5, change_dir=False, auto_bomu=True, auto_mabi=True, tap_method='natural')
+                self.active_spell_auto(skill_name='weapon', macro_type=macro_type, target_iter=[1], active_iter=7, change_dir=False, auto_bomu=True, auto_mabi=True, tap_method='natural')
+                self.keyboard_controller.press(keyboard.Key.down)
+                self.keyboard_controller.release(keyboard.Key.down)
+                time.sleep(random.uniform(0.3, 0.05 + 0.01))
+                self.keyboard_controller.press(',')
+                self.keyboard_controller.release(',')
+                time.sleep(random.uniform(1, 0.05 + 0.01))
                 self.keyboard_controller.press(keyboard.Key.right)
                 self.keyboard_controller.release(keyboard.Key.right)
-                self.active_spell_auto(skill_name='weapon', macro_type=macro_type, target_iter=[1], active_iter=5, change_dir=False, auto_bomu=True, auto_mabi=True, tap_method='natural')
+                self.active_spell_auto(skill_name='weapon', macro_type=macro_type, target_iter=[1], active_iter=7, change_dir=False, auto_bomu=True, auto_mabi=True, tap_method='natural')
+                self.keyboard_controller.press(keyboard.Key.right)
+                self.keyboard_controller.release(keyboard.Key.right)
+                time.sleep(random.uniform(0.3, 0.05 + 0.01))
+                self.keyboard_controller.press(',')
+                self.keyboard_controller.release(',')
+                time.sleep(random.uniform(1, 0.05 + 0.01))
                 self.keyboard_controller.press(keyboard.Key.up)
                 self.keyboard_controller.release(keyboard.Key.up)
-                self.active_spell_auto(skill_name='weapon', macro_type=macro_type, target_iter=[1], active_iter=5, change_dir=False, auto_bomu=True, auto_mabi=True, tap_method='natural')
+                self.active_spell_auto(skill_name='weapon', macro_type=macro_type, target_iter=[1], active_iter=7, change_dir=False, auto_bomu=True, auto_mabi=True, tap_method='natural')
+                self.keyboard_controller.press(keyboard.Key.up)
+                self.keyboard_controller.release(keyboard.Key.up)
+                time.sleep(random.uniform(0.3, 0.05 + 0.01))
+                self.keyboard_controller.press(',')
+                self.keyboard_controller.release(',')
+                time.sleep(random.uniform(1, 0.05 + 0.01))
                 self.keyboard_controller.press(keyboard.Key.left)
                 self.keyboard_controller.release(keyboard.Key.left)
-                self.active_spell_auto(skill_name='weapon', macro_type=macro_type, target_iter=[1], active_iter=5, change_dir=False, auto_bomu=True, auto_mabi=True, tap_method='natural')
+                self.active_spell_auto(skill_name='weapon', macro_type=macro_type, target_iter=[1], active_iter=7, change_dir=False, auto_bomu=True, auto_mabi=True, tap_method='natural')
+                self.keyboard_controller.press(keyboard.Key.left)
+                self.keyboard_controller.release(keyboard.Key.left)
+                time.sleep(random.uniform(0.3, 0.05 + 0.01))
+                self.keyboard_controller.press(',')
+                self.keyboard_controller.release(',')
+                time.sleep(random.uniform(1, 0.05 + 0.01))
                 self.keyboard_controller.press(keyboard.Key.down)
                 self.keyboard_controller.release(keyboard.Key.down)
 
@@ -386,12 +433,6 @@ class Macro_Baram_Cla():
             time.sleep(random.uniform(0.05, 0.05 + 0.01))
 
     def target_move(self, cur_x, cur_y, coordinate_type, target_coordinate, avoid_list):
-        # avoid_dict = {
-        #     keyboard.Key.left : [[keyboard.Key.down], [keyboard.Key.up], [keyboard.Key.right,keyboard.Key.down],[keyboard.Key.up],[keyboard.Key.right,keyboard.Key.up],[keyboard.Key.down]],
-        #     keyboard.Key.right : [[keyboard.Key.down], [keyboard.Key.up], [keyboard.Key.left,keyboard.Key.down],[keyboard.Key.up],[keyboard.Key.left,keyboard.Key.up],[keyboard.Key.down]],
-        #     keyboard.Key.down : [[keyboard.Key.right], [keyboard.Key.left], [keyboard.Key.up,keyboard.Key.right],[keyboard.Key.left],[keyboard.Key.up,keyboard.Key.right],[keyboard.Key.left]],
-        #     keyboard.Key.up : [[keyboard.Key.right], [keyboard.Key.left], [keyboard.Key.down,keyboard.Key.right],[keyboard.Key.left],[keyboard.Key.down,keyboard.Key.right],[keyboard.Key.left]],
-        # }
         if coordinate_type == 'x':
             cur = cur_x
         elif coordinate_type == 'y':
@@ -485,10 +526,15 @@ class Macro_Baram_Cla():
                 if self.state['auto_gongj_heal'] == 'ON':
                     self.start_auto_gongj_heal()
                     auto_g = 1
-                self._active_skill('north')
-                time.sleep(0.5)
                 screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
                 (cur_x, cur_y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region)
+                while (cur_y > 20) or (cur_x < 70) :
+                    if not self.state['auto_move']:
+                        raise
+                    self._active_skill('north')
+                    time.sleep(0.5)
+                    screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
+                    (cur_x, cur_y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region)
                 (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=[73,75], avoid_list=[[keyboard.Key.up], [keyboard.Key.up, keyboard.Key.up]])
                 (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=27, avoid_list=[[keyboard.Key.right], [keyboard.Key.left, keyboard.Key.left], [keyboard.Key.up, keyboard.Key.right]])
                 (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=[73,75], avoid_list=[[keyboard.Key.up], [keyboard.Key.up, keyboard.Key.up]])
@@ -502,6 +548,8 @@ class Macro_Baram_Cla():
                 (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=[72,74], avoid_list=[[keyboard.Key.up], [keyboard.Key.down]])
                 (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=53, avoid_list=[[keyboard.Key.right], [keyboard.Key.left], [keyboard.Key.left]])
                 while cur_x > 20:
+                    if not self.state['auto_move']:
+                        raise
                     self.keyboard_controller.press(keyboard.Key.up)
                     self.keyboard_controller.release(keyboard.Key.up)
                     time.sleep(delay)
@@ -522,6 +570,8 @@ class Macro_Baram_Cla():
                 screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
                 (cur_x, cur_y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region)
                 while cur_y < 140:
+                    if not self.state['auto_move']:
+                        raise
                     self._active_skill('south')
                     time.sleep(0.5)
                     screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
@@ -537,6 +587,68 @@ class Macro_Baram_Cla():
                     self.start_auto_gongj_heal()
                 self.start_auto_move()
 
+            elif self.state['move_type'] == 'go_west_haunted':
+                # 흉가 이동
+                if self.state['auto_gongj_heal'] == 'ON':
+                    self.start_auto_gongj_heal()
+                    auto_g = 1
+                screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
+                (cur_x, cur_y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region)
+
+                while (cur_y > 95) or (cur_y < 80) or (cur_x > 10) :     
+                    if not self.state['auto_move']:
+                        raise
+                    self._active_skill('west')
+                    time.sleep(0.5)
+                    screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
+                    (cur_x, cur_y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region)
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=[88,92], avoid_list=[[keyboard.Key.left], [keyboard.Key.right, keyboard.Key.right]])
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=2, avoid_list=[[keyboard.Key.up], [keyboard.Key.down, keyboard.Key.down]])
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=[87,88], avoid_list=[[keyboard.Key.right], [keyboard.Key.left]])
+                while cur_x < 20:
+                    if not self.state['auto_move']:
+                        raise
+                    self.keyboard_controller.press(keyboard.Key.left)
+                    self.keyboard_controller.release(keyboard.Key.left)
+                    time.sleep(delay)
+                    screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
+                    (cur_x, cur_y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region)
+
+                while cur_y < 140:
+                    if not self.state['auto_move']:
+                        raise
+                    self._active_skill('south')
+                    time.sleep(0.5)
+                    screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
+                    (cur_x, cur_y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region)
+
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=[143,145], avoid_list=[[keyboard.Key.left], [keyboard.Key.right, keyboard.Key.right]])
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=69, avoid_list=[[keyboard.Key.up], [keyboard.Key.up, keyboard.Key.up]])
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=141, avoid_list=[[keyboard.Key.right], [keyboard.Key.right, keyboard.Key.right]])
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=69, avoid_list=[[keyboard.Key.down], [keyboard.Key.down, keyboard.Key.down]])
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=126, avoid_list=[[keyboard.Key.left], [keyboard.Key.right, keyboard.Key.right]])
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=[68,70], avoid_list=[[keyboard.Key.down]])
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=123, avoid_list=[[keyboard.Key.right]]) # 흉가 앞
+                ## 흉가입구 입장
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=[69,70], avoid_list=[[keyboard.Key.down], [keyboard.Key.down, keyboard.Key.down]])
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=122, avoid_list=[[keyboard.Key.right], [keyboard.Key.left]])
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=[69,70], avoid_list=[[keyboard.Key.down], [keyboard.Key.down, keyboard.Key.down]])
+                while cur_x > 15:
+                    if not self.state['auto_move']:
+                        raise
+                    self.keyboard_controller.press(keyboard.Key.up)
+                    self.keyboard_controller.release(keyboard.Key.up)
+                    time.sleep(delay)
+                    screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
+                    (cur_x, cur_y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region)
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=11, avoid_list=[[keyboard.Key.right], [keyboard.Key.left, keyboard.Key.left]])
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=[6,7], avoid_list=[[keyboard.Key.up], [keyboard.Key.down, keyboard.Key.down]])
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=4, avoid_list=[[keyboard.Key.left], [keyboard.Key.right, keyboard.Key.right]]) # 2지 앞
+                
+                if auto_g == 1:
+                    self.start_auto_gongj_heal()
+                self.start_auto_move()
+
             elif self.state['move_type'] == 'in_haunted_house':
                 # 흉가 1층 이동
                 if self.state['auto_gongj_heal'] == 'ON':
@@ -544,8 +656,12 @@ class Macro_Baram_Cla():
                     auto_g = 1
                 screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
                 (cur_x, cur_y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region)
-                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=[69,70])
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=[69,70], avoid_list=[[keyboard.Key.down], [keyboard.Key.down, keyboard.Key.down]])
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=122, avoid_list=[[keyboard.Key.right], [keyboard.Key.left]])
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=[69,70], avoid_list=[[keyboard.Key.down], [keyboard.Key.down, keyboard.Key.down]])
                 while cur_x > 5:
+                    if not self.state['auto_move']:
+                        raise
                     self.keyboard_controller.press(keyboard.Key.up)
                     self.keyboard_controller.release(keyboard.Key.up)
                     time.sleep(delay)
@@ -566,13 +682,104 @@ class Macro_Baram_Cla():
                 (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=18)
                 self.start_auto_move()
 
+            elif self.state['move_type'] == 'in_west_haunted':
+                # 2지 흉가 1층 이동
+                if self.state['auto_gongj_heal'] == 'ON':
+                    self.start_auto_gongj_heal()
+                    auto_g = 1
+                screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
+                (cur_x, cur_y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region)
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=[6,7], avoid_list=[[keyboard.Key.down], [keyboard.Key.down, keyboard.Key.down]])
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=3, avoid_list=[[keyboard.Key.left], [keyboard.Key.right]])
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=[6,7], avoid_list=[[keyboard.Key.down], [keyboard.Key.down, keyboard.Key.down]])
+                while cur_x > 3:
+                    if not self.state['auto_move']:
+                        raise
+                    self.keyboard_controller.press(keyboard.Key.up)
+                    self.keyboard_controller.release(keyboard.Key.up)
+                    time.sleep(delay)
+                    screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
+                    (cur_x, cur_y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region)
+                # 1층 안에서 이동
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=2, avoid_list=[[keyboard.Key.up]])
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=8, avoid_list=[[keyboard.Key.left], [keyboard.Key.right]])
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=8, avoid_list=[[keyboard.Key.up], [keyboard.Key.down]])
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=5, avoid_list=[[keyboard.Key.left], [keyboard.Key.right]])
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=11, avoid_list=[[keyboard.Key.up], [keyboard.Key.down]])
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=3, avoid_list=[[keyboard.Key.left], [keyboard.Key.right]])
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=20, avoid_list=[[keyboard.Key.up], [keyboard.Key.down]])
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=4, avoid_list=[[keyboard.Key.left], [keyboard.Key.right]])
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=29, avoid_list=[[keyboard.Key.up], [keyboard.Key.down]])
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=9, avoid_list=[[keyboard.Key.left], [keyboard.Key.right]])
+                while True:
+                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=29, avoid_list=[[keyboard.Key.up], [keyboard.Key.down]])
+                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=17, avoid_list=[[keyboard.Key.left], [keyboard.Key.right]])
+                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=29, avoid_list=[[keyboard.Key.up], [keyboard.Key.down]])
+                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=25, avoid_list=[[keyboard.Key.left], [keyboard.Key.right]])
+                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=25, avoid_list=[[keyboard.Key.up], [keyboard.Key.down]])
+                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=28, avoid_list=[[keyboard.Key.left], [keyboard.Key.right]])
+                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=4, avoid_list=[[keyboard.Key.up], [keyboard.Key.down]])
+                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=20, avoid_list=[[keyboard.Key.left], [keyboard.Key.right]])
+                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=6, avoid_list=[[keyboard.Key.up], [keyboard.Key.down]])
+                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=18, avoid_list=[[keyboard.Key.left], [keyboard.Key.right]])
+                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=16, avoid_list=[[keyboard.Key.up], [keyboard.Key.down]])
+                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=12, avoid_list=[[keyboard.Key.left], [keyboard.Key.right]])
+                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=29, avoid_list=[[keyboard.Key.up], [keyboard.Key.down]])
+                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=17, avoid_list=[[keyboard.Key.left], [keyboard.Key.right]])
+
+            elif self.state['move_type'] == 'go_buyeo':
+                # 흉가 이동
+                if self.state['auto_gongj_heal'] == 'ON':
+                    self.start_auto_gongj_heal()
+                    auto_g = 1
+                screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
+                (cur_x, cur_y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region)
+                
+                while (cur_x < 130) :      
+                    if not self.state['auto_move']:
+                        raise
+                    self._active_skill('east')
+                    time.sleep(0.5)
+                    screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
+                    (cur_x, cur_y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region)
+                    
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=[86,90], avoid_list=[[keyboard.Key.left], [keyboard.Key.right, keyboard.Key.right]])
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=143, avoid_list=[[keyboard.Key.up], [keyboard.Key.down, keyboard.Key.down]])
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=[87,88], avoid_list=[[keyboard.Key.right], [keyboard.Key.left]])
+                while cur_x > 20:
+                    if not self.state['auto_move']:
+                        raise
+                    self.keyboard_controller.press(keyboard.Key.right)
+                    self.keyboard_controller.release(keyboard.Key.right)
+                    time.sleep(delay)
+                    screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
+                    (cur_x, cur_y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region)
+
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=25, avoid_list=[[keyboard.Key.up], [keyboard.Key.down, keyboard.Key.down]])
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=[14,15], avoid_list=[[keyboard.Key.right], [keyboard.Key.left]])
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=28, avoid_list=[[keyboard.Key.up], [keyboard.Key.down, keyboard.Key.down]])
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=[14,15], avoid_list=[[keyboard.Key.right], [keyboard.Key.left]])
+                
+                while cur_y < 80:
+                    if not self.state['auto_move']:
+                        raise
+                    self.keyboard_controller.press(keyboard.Key.right)
+                    self.keyboard_controller.release(keyboard.Key.right)
+                    time.sleep(delay)
+                    screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
+                    (cur_x, cur_y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region)
+
+                if auto_g == 1:
+                    self.start_auto_gongj_heal()
+                self.start_auto_move()
+    
     def change_macro_type(self):
         type_list = ['auto_hunt', 'mabi', 'weapon', 'poison']
         idx = type_list.index(self.state['macro_type'])  # 현재 값의 인덱스 찾기
         self.state['macro_type'] = type_list[(idx + 1) % len(type_list)]  # 다음 값으로 순환
     
     def change_move_type(self):
-        type_list = ['out_palace', 'go_haunted_house', 'in_haunted_house', 'go_palace']
+        type_list = ['out_palace', 'go_haunted_house', 'go_west_haunted', 'in_haunted_house', 'in_west_haunted', 'go_buyeo', 'go_palace']
         idx = type_list.index(self.state['move_type'])  # 현재 값의 인덱스 찾기
         self.state['move_type'] = type_list[(idx + 1) % len(type_list)]  # 다음 값으로 순환
                     
@@ -583,7 +790,24 @@ class Macro_Baram_Cla():
             if self.state['auto_gongj_heal'] == 'ON':
                 auto_g = 1
                 self.start_auto_gongj_heal()
-            while True:
+            screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
+            king_coord = image_detection(screenshot, ['./image/king.png'], 0.6, show=False)
+            if len(king_coord) == 0:
+                autoq = 0
+            else:
+                # 첫 번째 좌표로 마우스 이동
+                target_x = self.game_region[0] + king_coord[0][0]
+                target_y = self.game_region[1] + king_coord[0][1]
+                pyautogui.moveTo(target_x, target_y, duration=0.1)  # 마우스 이동 (0.5초 동안 이동)
+                pyautogui.click()
+                pyautogui.moveTo(self.game_region[0], self.game_region[1], duration=0.1)  # 마우스 이동 (0.5초 동안 이동)
+                time.sleep(0.5)
+                screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
+                guard = image_detection(screenshot, image_path_list=['./image/guard.png'], confidence=0.7, merge_thres=50, show=False, location='center')[0]
+                self.kingq_cut_region = (guard[0]+40, guard[1]-40, 380, 300)
+                autoq = 1    
+        
+            while autoq == 1:
                 screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
                 king_coord = image_detection(screenshot, ['./image/king.png'], 0.6, show=False)
 
@@ -593,7 +817,6 @@ class Macro_Baram_Cla():
                     # 첫 번째 좌표로 마우스 이동
                     target_x = self.game_region[0] + king_coord[0][0]
                     target_y = self.game_region[1] + king_coord[0][1]
-
                     pyautogui.moveTo(target_x, target_y, duration=0.1)  # 마우스 이동 (0.5초 동안 이동)
                     pyautogui.click()
                     pyautogui.moveTo(self.game_region[0], self.game_region[1], duration=0.1)  # 마우스 이동 (0.5초 동안 이동)
@@ -636,7 +859,7 @@ class Macro_Baram_Cla():
 
                     if self.target_monster in self.kingq_wish:
                         break
-                    
+            print('king q end')
             self.state['kingq'] = False
             self.kingq_button.config(state=tk.NORMAL)
             if auto_g == 1:
@@ -657,48 +880,58 @@ class Macro_Baram_Cla():
                 self.state['auto_move'] = True
                 self.auto_move()
                 time.sleep(delay)
-                self.state['move_type'] = 'go_haunted_house'
+                self.state['move_type'] = 'go_west_haunted'
                 self.state['auto_move'] = True
                 self.auto_move()
                 time.sleep(delay)
                 self._active_skill(skill_name='boho', target_iter=1)
                 self._active_skill(skill_name='muzang', target_iter=1)
+                self.auto_gongj(run=False)
+                self.auto_heal(run=False)
                 time.sleep(delay)
                 # for _ in range(2):
                 #     self.keyboard_controller.press(keyboard.Key.up)
                 #     self.keyboard_controller.release(keyboard.Key.up)
                 #     time.sleep(delay)
-                self.start_auto_pilot()
-                
-            # elif self.auto_pilot_state == 1:
-            #     self.state['move_type'] = 'in_haunted_house'
-            #     self.state['auto_move'] = False
-            #     self.start_auto_move()
-                
-            #     screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
-            #     (cur_x, cur_y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region)
-            #     while cur_x > 1:
-            #         time.sleep(0.5)
-            #         screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
-            #         (cur_x, cur_y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region)
-                    
-            #     self.state['macro_type'] == 'auto_hunt'
-            #     self.start_macro()
-
-            #     extracted_text = 'none'
-            #     while '경험치' not in extracted_text:
-            #         if not self.state['auto_pilot']:
-            #             raise
-            #         time.sleep(0.5)
-            #         extracted_text = extract_text_from_image(self.game_region, cut_region=(820,565,345,123), config=r'--oem 1 --psm 6')
-            #         extracted_text = extracted_text.replace(' ','')
-            #         print(extracted_text)
-
-            #     self.stop_macro()
-            #     self.auto_pilot_state = 2
-            #     self.start_auto_pilot()
+                # self.start_auto_pilot()
                 
             elif self.auto_pilot_state == 1:
+                self.auto_pilot_state = 2
+                self.state['move_type'] = 'in_west_haunted'
+                self.state['auto_move'] = False
+                self.start_auto_move()
+                
+                screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
+                (cur_x, cur_y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region)
+                while cur_x > 1:
+                    time.sleep(0.5)
+                    screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
+                    (cur_x, cur_y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region)
+                    
+                self.state['macro_type'] = 'auto_hunt'
+                self.start_macro()
+                print('start auto hunt')
+                
+                extracted_text = 'none'
+                while '경험치' not in extracted_text:
+                    if not self.state['auto_pilot']:
+                        raise
+                    time.sleep(0.5)
+                    extracted_text = extract_text_from_image(self.game_region, cut_region=self.message_region, config=r'--oem 1 --psm 6')
+                    extracted_text = extracted_text.replace(' ','')
+                    print(extracted_text)
+
+                self.stop_macro()
+
+                self.state['move_type'] = 'go_buyeo'
+                self.state['auto_move'] = True
+                self.auto_move()
+                time.sleep(delay)
+
+                # self.stop_macro()
+                # self.start_auto_pilot()
+                
+            elif self.auto_pilot_state == 2:
                 self.auto_pilot_state = 0
                 # 왕퀘로 복귀
                 self.state['move_type'] = 'go_palace'
