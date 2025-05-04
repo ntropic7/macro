@@ -34,7 +34,7 @@ class Macro_Baram_Cla():
         self.kings_speech = ['무례', '폐하께', '임무', '무서', '어요', '어명이오', '네이놈', '아직', '다시', '취소', '형벌', '받든']
         # self.kingq_wish = ['처녀귀신', '불귀신', '달갈귀신', '달갤귀신']
         self.kingq_wish = ['처녀귀신']
-        self.state = {'macro_running': False, 'macro_type':'auto_hunt', 'mode': 'normal', 'kingq':False, 'auto_gongj_heal':'OFF', 'macro_pause':False, 'auto_move':False, 'move_type':'out_palace', 'auto_pilot': False} 
+        self.state = {'macro_running': False, 'macro_type':'auto_hunt', 'mode': 'normal', 'kingq':False, 'auto_gongj_heal':'OFF', 'macro_pause':False, 'auto_move':False, 'move_pause':False, 'move_type':'out_palace', 'auto_pilot': False} 
         self.skill_mapping = {
             'mabi' : {'skk':'1', 'delay':0.02, 'direction':keyboard.Key.left},
             'curse' : {'skk':'2', 'delay':0.02, 'direction':keyboard.Key.left},
@@ -303,8 +303,8 @@ class Macro_Baram_Cla():
 
                 screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
                 game_screen = capture_and_crop(screenshot, self.game_screen_region)
-                me = image_detection(game_screen, image_path_list=['./image/me_back.png', './image/me_left.png', './image/me_right.png', './image/me_front.png'], confidence=0.65, merge_thres=45, show=False, location='center') 
-                cn = image_detection(game_screen, image_path_list=['./image/cn_back.png', './image/cn_left.png', './image/cn_right.png', './image/cn_front.png'], confidence=0.7, merge_thres=45, show=False, location='center')
+                me = image_detection(game_screen, image_path_list=['./image/me_back.png', './image/me_left.png', './image/me_right.png', './image/me_front.png'], confidence=0.65, merge_thres=45, show=False, location='bottom') 
+                cn = image_detection(game_screen, image_path_list=['./image/cn_back.png', './image/cn_left.png', './image/cn_right.png', './image/cn_front.png'], confidence=0.7, merge_thres=45, show=False, location='bottom')
                 if len(me) == 0:
                     continue
                 me_x, me_y = (me[0][0]//45 + 1, me[0][1]//45 + 1)
@@ -312,11 +312,15 @@ class Macro_Baram_Cla():
                 
                 print(len(avail_cn))
                 if len(avail_cn) > 0:
-                    self.state['auto_move'] = False
+                    self.state['move_pause'] = True
                     self.active_spell_auto(skill_name='mabi', macro_type=macro_type, target_iter=[1], active_iter=10, change_dir=True, auto_bomu=False, auto_mabi=False)
+                    self.auto_gongj(run=False)
+                    self.auto_heal(run=False)
 
-                    me = image_detection(game_screen, image_path_list=['./image/me_back.png', './image/me_left.png', './image/me_right.png', './image/me_front.png'], confidence=0.65, merge_thres=45, show=False, location='center') 
-                    cn = image_detection(game_screen, image_path_list=['./image/cn_back.png', './image/cn_left.png', './image/cn_right.png', './image/cn_front.png'], confidence=0.7, merge_thres=45, show=False, location='center')
+                    screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
+                    game_screen = capture_and_crop(screenshot, self.game_screen_region)
+                    me = image_detection(game_screen, image_path_list=['./image/me_back.png', './image/me_left.png', './image/me_right.png', './image/me_front.png'], confidence=0.65, merge_thres=45, show=False, location='bottom') 
+                    cn = image_detection(game_screen, image_path_list=['./image/cn_back.png', './image/cn_left.png', './image/cn_right.png', './image/cn_front.png'], confidence=0.7, merge_thres=45, show=False, location='bottom')
                     if len(me) == 0:
                         continue
                     me_x, me_y = (me[0][0]//45 + 1, me[0][1]//45 + 1)
@@ -375,6 +379,7 @@ class Macro_Baram_Cla():
                     #         if '경험치' in extracted_text:
                     #             break
                     # self.stop_macro()
+                self.state['move_pause'] = False
                     
             elif self.state['macro_type']=='mabi':
                 self.skill_mapping['mabi']['delay']=0.02
@@ -444,6 +449,8 @@ class Macro_Baram_Cla():
             target_coordinate = [target_coordinate]
         
         while cur < np.min(target_coordinate) or cur > np.max(target_coordinate):
+            while self.state['move_pause']:
+                time.sleep(0.1)
             if not self.state['auto_move']:
                 raise
             if cur < np.min(target_coordinate):
@@ -744,7 +751,7 @@ class Macro_Baram_Cla():
                     (cur_x, cur_y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region)
                     
                 (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=[86,90], avoid_list=[[keyboard.Key.left], [keyboard.Key.right, keyboard.Key.right]])
-                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=143, avoid_list=[[keyboard.Key.up], [keyboard.Key.down, keyboard.Key.down]])
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=140, avoid_list=[[keyboard.Key.up], [keyboard.Key.down, keyboard.Key.down]])
                 (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=[87,88], avoid_list=[[keyboard.Key.right], [keyboard.Key.left]])
                 while cur_x > 20:
                     if not self.state['auto_move']:
@@ -922,17 +929,19 @@ class Macro_Baram_Cla():
                     print(extracted_text)
 
                 self.stop_macro()
-
-                self.state['move_type'] = 'go_buyeo'
-                self.state['auto_move'] = True
-                self.auto_move()
+                self.state['auto_move'] = False
+                self.state['move_pause'] = False
                 time.sleep(delay)
-
                 # self.stop_macro()
                 # self.start_auto_pilot()
                 
             elif self.auto_pilot_state == 2:
                 self.auto_pilot_state = 0
+                # 부여 이동
+                self.state['move_type'] = 'go_buyeo'
+                self.state['auto_move'] = True
+                self.auto_move()
+                time.sleep(delay)
                 # 왕퀘로 복귀
                 self.state['move_type'] = 'go_palace'
                 self.state['auto_move'] = True
