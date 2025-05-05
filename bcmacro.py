@@ -57,7 +57,7 @@ class Macro_Baram_Cla():
         self.keyboard_controller = keyboard.Controller()
         
         self.mp_thres = 0.7
-        self.hp_thres = 0.7
+        self.hp_thres = 0.9
         self.skill_done = 1
         self.bomu_time = time.time() - 999
         self.mabi_time = time.time() - 999
@@ -709,30 +709,30 @@ class Macro_Baram_Cla():
                     (cur_x, cur_y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region)
                 # 1층 안에서 이동
                 (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=2, avoid_list=[[keyboard.Key.up]])
-                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=8, avoid_list=[[keyboard.Key.left], [keyboard.Key.right]])
-                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=8, avoid_list=[[keyboard.Key.up], [keyboard.Key.down]])
-                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=5, avoid_list=[[keyboard.Key.left], [keyboard.Key.right]])
-                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=11, avoid_list=[[keyboard.Key.up], [keyboard.Key.down]])
-                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=3, avoid_list=[[keyboard.Key.left], [keyboard.Key.right]])
-                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=20, avoid_list=[[keyboard.Key.up], [keyboard.Key.down]])
-                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=4, avoid_list=[[keyboard.Key.left], [keyboard.Key.right]])
-                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=29, avoid_list=[[keyboard.Key.up], [keyboard.Key.down]])
-                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=9, avoid_list=[[keyboard.Key.left], [keyboard.Key.right]])
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=8, avoid_list=[[keyboard.Key.left], [keyboard.Key.right, keyboard.Key.right]])
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=8, avoid_list=[[keyboard.Key.up], [keyboard.Key.down, keyboard.Key.down]])
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=5, avoid_list=[[keyboard.Key.left], [keyboard.Key.right, keyboard.Key.right]])
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=11, avoid_list=[[keyboard.Key.up], [keyboard.Key.down, keyboard.Key.down]])
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=3, avoid_list=[[keyboard.Key.left], [keyboard.Key.right, keyboard.Key.right]])
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=20, avoid_list=[[keyboard.Key.up], [keyboard.Key.down, keyboard.Key.down]])
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=4, avoid_list=[[keyboard.Key.left], [keyboard.Key.right, keyboard.Key.right]])
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=29, avoid_list=[[keyboard.Key.up], [keyboard.Key.down, keyboard.Key.down]])
+                (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=9, avoid_list=[[keyboard.Key.left], [keyboard.Key.right, keyboard.Key.right]])
                 while True:
-                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=29, avoid_list=[[keyboard.Key.up], [keyboard.Key.down]])
-                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=17, avoid_list=[[keyboard.Key.left], [keyboard.Key.right]])
-                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=29, avoid_list=[[keyboard.Key.up], [keyboard.Key.down]])
-                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=25, avoid_list=[[keyboard.Key.left], [keyboard.Key.right]])
-                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=25, avoid_list=[[keyboard.Key.up], [keyboard.Key.down]])
-                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=28, avoid_list=[[keyboard.Key.left], [keyboard.Key.right]])
-                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=4, avoid_list=[[keyboard.Key.up], [keyboard.Key.down]])
-                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=20, avoid_list=[[keyboard.Key.left], [keyboard.Key.right]])
-                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=6, avoid_list=[[keyboard.Key.up], [keyboard.Key.down]])
-                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=18, avoid_list=[[keyboard.Key.left], [keyboard.Key.right]])
-                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=16, avoid_list=[[keyboard.Key.up], [keyboard.Key.down]])
-                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=12, avoid_list=[[keyboard.Key.left], [keyboard.Key.right]])
-                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=29, avoid_list=[[keyboard.Key.up], [keyboard.Key.down]])
-                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=17, avoid_list=[[keyboard.Key.left], [keyboard.Key.right]])
+                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=29, avoid_list=[[keyboard.Key.up], [keyboard.Key.down, keyboard.Key.down]])
+                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=17, avoid_list=[[keyboard.Key.left], [keyboard.Key.right, keyboard.Key.right]])
+                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=29, avoid_list=[[keyboard.Key.up], [keyboard.Key.down, keyboard.Key.down]])
+                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=25, avoid_list=[[keyboard.Key.left], [keyboard.Key.right, keyboard.Key.right]])
+                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=25, avoid_list=[[keyboard.Key.up], [keyboard.Key.down, keyboard.Key.down]])
+                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=28, avoid_list=[[keyboard.Key.left], [keyboard.Key.right, keyboard.Key.right]])
+                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=4, avoid_list=[[keyboard.Key.up], [keyboard.Key.down, keyboard.Key.down]])
+                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=20, avoid_list=[[keyboard.Key.left], [keyboard.Key.right, keyboard.Key.right]])
+                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=6, avoid_list=[[keyboard.Key.up], [keyboard.Key.down, keyboard.Key.down]])
+                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=18, avoid_list=[[keyboard.Key.left], [keyboard.Key.right, keyboard.Key.right]])
+                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=16, avoid_list=[[keyboard.Key.up], [keyboard.Key.down, keyboard.Key.down]])
+                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=12, avoid_list=[[keyboard.Key.left], [keyboard.Key.right, keyboard.Key.right]])
+                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=29, avoid_list=[[keyboard.Key.up], [keyboard.Key.down, keyboard.Key.down]])
+                    (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=17, avoid_list=[[keyboard.Key.left], [keyboard.Key.right, keyboard.Key.right]])
 
             elif self.state['move_type'] == 'go_buyeo':
                 # 흉가 이동
