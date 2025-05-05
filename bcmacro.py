@@ -14,12 +14,19 @@ pyautogui.FAILSAFE = False
 class Macro_Baram_Cla():
     def __init__(self):
         # 매크로 상태 및 설정
-        # self.game_region = (520, 110, 1200, 900)
+        self.monitor_mode = 'wide' ###########################
+        ######################################################
         print('wait 5sec')
         time.sleep(5)
         screenshot = pyautogui.screenshot(region=None, allScreens=True)
-        # game_left_top = image_detection(screenshot, image_path_list=['./image/game_scr.png'], confidence=0.6, merge_thres=50, show=False, location='left_top')
-        game_left_top = image_detection(screenshot, image_path_list=['./image/game_scr_wide.png'], confidence=0.7, merge_thres=50, show=False, location='left_top')
+        if self.monitor_mode == 'normal':
+	        game_left_top = image_detection(screenshot, image_path_list=['./image/game_scr.png'], confidence=0.6, merge_thres=50, show=False, location='left_top')
+        	self.monitor_scale = 1
+        elif self.monitor_mode == 'wide':
+        	game_left_top = image_detection(screenshot, image_path_list=['./image/game_scr_wide.png'], confidence=0.7, merge_thres=50, show=False, location='left_top')
+        	self.monitor_scale = 1.25
+        else:
+            raise
         print(game_left_top)
         if len(game_left_top) == 0:
             print('Not match game screenshot file')
@@ -31,6 +38,8 @@ class Macro_Baram_Cla():
         self.right_coord_cut_region = (1082, 850, 75, 23)
         self.game_screen_region = (25,20,765,675)
         self.message_region = (820,565,345,123)
+
+        
 
         self.kings_speech = ['무례', '폐하께', '임무', '무서', '어요', '어명이오', '네이놈', '아직', '다시', '취소', '형벌', '받든']
         # self.kingq_wish = ['처녀귀신', '불귀신', '달갈귀신', '달갤귀신']
@@ -121,7 +130,7 @@ class Macro_Baram_Cla():
                         self.keyboard_controller.release(keyboard.Key.esc)
                 else:
                     time.sleep(delay)
-                    pyautogui.moveTo(mouse_target[0], mouse_target[1], duration=self.skill_mapping[skill_name_]['delay'])
+                    pyautogui.moveTo(mouse_target[0]*self.monitor_scale, mouse_target[1]*self.monitor_scale, duration=self.skill_mapping[skill_name_]['delay'])
                     time.sleep(delay)
                     pyautogui.click()
                     time.sleep(delay)
@@ -813,9 +822,9 @@ class Macro_Baram_Cla():
                 # 첫 번째 좌표로 마우스 이동
                 target_x = self.game_region[0] + king_coord[0][0]
                 target_y = self.game_region[1] + king_coord[0][1]
-                pyautogui.moveTo(target_x, target_y, duration=0.1)  # 마우스 이동 (0.5초 동안 이동)
+                pyautogui.moveTo(target_x*self.monitor_scale, target_y*self.monitor_scale, duration=0.1)  # 마우스 이동 (0.5초 동안 이동)
                 pyautogui.click()
-                pyautogui.moveTo(self.game_region[0], self.game_region[1], duration=0.1)  # 마우스 이동 (0.5초 동안 이동)
+                pyautogui.moveTo(self.game_region[0]*self.monitor_scale, self.game_region[1]*self.monitor_scale, duration=0.1)  # 마우스 이동 (0.5초 동안 이동)
                 time.sleep(0.5)
                 screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
                 guard = image_detection(screenshot, image_path_list=['./image/guard.png'], confidence=0.7, merge_thres=50, show=False, location='center')
@@ -834,9 +843,9 @@ class Macro_Baram_Cla():
                     # 첫 번째 좌표로 마우스 이동
                     target_x = self.game_region[0] + king_coord[0][0]
                     target_y = self.game_region[1] + king_coord[0][1]
-                    pyautogui.moveTo(target_x, target_y, duration=0.1)  # 마우스 이동 (0.5초 동안 이동)
+                    pyautogui.moveTo(target_x*self.monitor_scale, target_y*self.monitor_scale, duration=0.1)  # 마우스 이동 (0.5초 동안 이동)
                     pyautogui.click()
-                    pyautogui.moveTo(self.game_region[0], self.game_region[1], duration=0.1)  # 마우스 이동 (0.5초 동안 이동)
+                    pyautogui.moveTo(self.game_region[0]*self.monitor_scale, self.game_region[1]*self.monitor_scale, duration=0.1)  # 마우스 이동 (0.5초 동안 이동)
 
                     # 퀘스트 시작
                     for _ in range(20):
