@@ -316,6 +316,9 @@ class Macro_Baram_Cla():
                     self.active_spell_auto(skill_name='mabi', macro_type=macro_type, target_iter=[1], active_iter=10, change_dir=True, auto_bomu=False, auto_mabi=False)
                     self.auto_gongj(run=False)
                     self.auto_heal(run=False)
+                    time.sleep(0.5)
+                    self.keyboard_controller.press(keyboard.Key.esc)
+                    self.keyboard_controller.release(keyboard.Key.esc)
 
                     screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
                     game_screen = capture_and_crop(screenshot, self.game_screen_region)
@@ -520,10 +523,14 @@ class Macro_Baram_Cla():
                 (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=[12,17], avoid_list=[[keyboard.Key.up]])  
                 (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='y', target_coordinate=38, avoid_list=[[keyboard.Key.right], [keyboard.Key.up, keyboard.Key.right]])
                 (cur_x, cur_y) = self.target_move(cur_x, cur_y, coordinate_type='x', target_coordinate=[12,17], avoid_list=[[keyboard.Key.up]])
-                for _ in range(5):
+                while cur_x < 70:
+                    if not self.state['auto_move']:
+                        raise
                     self.keyboard_controller.press(keyboard.Key.down)
                     self.keyboard_controller.release(keyboard.Key.down)
                     time.sleep(delay)
+                    screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
+                    (cur_x, cur_y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region)
                 if auto_g == 1:
                     self.start_auto_gongj_heal()
                 self.start_auto_move()
@@ -810,8 +817,10 @@ class Macro_Baram_Cla():
                 pyautogui.moveTo(self.game_region[0], self.game_region[1], duration=0.1)  # 마우스 이동 (0.5초 동안 이동)
                 time.sleep(0.5)
                 screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
-                guard = image_detection(screenshot, image_path_list=['./image/guard.png'], confidence=0.7, merge_thres=50, show=False, location='center')[0]
-                self.kingq_cut_region = (guard[0]+40, guard[1]-40, 380, 300)
+                guard = image_detection(screenshot, image_path_list=['./image/guard.png'], confidence=0.7, merge_thres=50, show=False, location='center')
+                if len(guard) == 0:
+                    continue
+                self.kingq_cut_region = (guard[0][0]+40, guard[0][1]-40, 380, 300)
                 autoq = 1    
         
             while autoq == 1:
@@ -895,6 +904,9 @@ class Macro_Baram_Cla():
                 self._active_skill(skill_name='muzang', target_iter=1)
                 self.auto_gongj(run=False)
                 self.auto_heal(run=False)
+                time.sleep(delay)
+                self.keyboard_controller.press(keyboard.Key.esc)
+                self.keyboard_controller.release(keyboard.Key.esc)
                 time.sleep(delay)
                 # for _ in range(2):
                 #     self.keyboard_controller.press(keyboard.Key.up)
@@ -989,6 +1001,7 @@ class Macro_Baram_Cla():
             ammacro = threading.Thread(target=self.auto_move, daemon=True)
             ammacro.start()
         else:
+            self.state['move_pause'] = False
             self.state['auto_move'] = False
 
     def start_auto_pilot(self):
@@ -1000,6 +1013,8 @@ class Macro_Baram_Cla():
             self.state['auto_pilot'] = False
             for key in ['macro_running', 'kingq', 'macro_pause', 'auto_move', 'auto_pilot']:
                 self.state[key] = False
+            self.state['move_pause'] = False
+            self.state['macro_pause'] = False
                                 
     def on_press(self, key):
         """키 입력 감지"""
