@@ -43,7 +43,7 @@ class Macro_Baram_Cla():
 
         self.kings_speech = ['무례', '폐하께', '임무', '무서', '어요', '어명이오', '네이놈', '아직', '다시', '취소', '형벌', '받든']
         # self.kingq_wish = ['처녀귀신', '불귀신', '달갈귀신', '달갤귀신']
-        self.kingq_wish = ['처녀귀신']
+        self.kingq_wish = ['처녀귀신', '처녀귀선', '처녀']
         self.state = {'macro_running': False, 'macro_type':'auto_hunt', 'mode': 'normal', 'kingq':False, 'auto_gongj_heal':'OFF', 'macro_pause':False, 'auto_move':False, 'move_pause':False, 'move_type':'out_palace', 'auto_pilot': False} 
         self.skill_mapping = {
             'mabi' : {'skk':'1', 'delay':0.02, 'direction':keyboard.Key.left},
@@ -460,6 +460,7 @@ class Macro_Baram_Cla():
         move_dir = keyboard.Key.right
         if type(target_coordinate) != list:
             target_coordinate = [target_coordinate]
+        print(cur_x, cur_y)
         
         while cur < np.min(target_coordinate) or cur > np.max(target_coordinate):
             while self.state['move_pause']:
@@ -809,7 +810,7 @@ class Macro_Baram_Cla():
                     
     def auto_king_q(self):
         while self.state['kingq']:
-            delay = random.uniform(0.01, 0.001)
+            delay = random.uniform(0.02, 0.001)
             auto_g = 0
             if self.state['auto_gongj_heal'] == 'ON':
                 auto_g = 1
@@ -848,7 +849,7 @@ class Macro_Baram_Cla():
                     pyautogui.moveTo(self.game_region[0]*self.monitor_scale, self.game_region[1]*self.monitor_scale, duration=0.1)  # 마우스 이동 (0.5초 동안 이동)
 
                     # 퀘스트 시작
-                    for _ in range(20):
+                    for _ in range(100):
                         if not self.state['kingq']:
                             raise
                         extracted_text = extract_text_from_image(self.game_region, cut_region=self.kingq_cut_region, config=r'--oem 1 --psm 6')

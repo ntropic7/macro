@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 from PIL import Image
 
-pytesseract.pytesseract.tesseract_cmd = 'C:/Program Files/Tesseract-OCR/tesseract.exe'
+pytesseract.pytesseract.tesseract_cmd = './Tesseract-OCR/tesseract.exe'
 
 def capture_and_crop(screenshot, crop_area=None):
     """
