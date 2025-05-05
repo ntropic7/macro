@@ -18,7 +18,8 @@ class Macro_Baram_Cla():
         print('wait 5sec')
         time.sleep(5)
         screenshot = pyautogui.screenshot(region=None, allScreens=True)
-        game_left_top = image_detection(screenshot, image_path_list=['./image/game_scr.png'], confidence=0.6, merge_thres=50, show=False, location='left_top')
+        # game_left_top = image_detection(screenshot, image_path_list=['./image/game_scr.png'], confidence=0.6, merge_thres=50, show=False, location='left_top')
+        game_left_top = image_detection(screenshot, image_path_list=['./image/game_scr_wide.png'], confidence=0.7, merge_thres=50, show=False, location='left_top')
         print(game_left_top)
         if len(game_left_top) == 0:
             print('Not match game screenshot file')
