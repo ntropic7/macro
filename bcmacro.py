@@ -7,6 +7,7 @@ from tkinter import messagebox
 import pyautogui
 import numpy as np
 from PIL import Image
+import pytesseract
 from image_utils import *
 
 pyautogui.FAILSAFE = False
@@ -22,9 +23,11 @@ class Macro_Baram_Cla():
         if self.monitor_mode == 'normal':
 	        game_left_top = image_detection(screenshot, image_path_list=['./image/game_scr.png'], confidence=0.6, merge_thres=50, show=False, location='left_top')
         	self.monitor_scale = 1
+            pytesseract.pytesseract.tesseract_cmd = 'C:/Program Files/Tesseract-OCR/tesseract.exe'
         elif self.monitor_mode == 'wide':
         	game_left_top = image_detection(screenshot, image_path_list=['./image/game_scr_wide.png'], confidence=0.7, merge_thres=50, show=False, location='left_top')
         	self.monitor_scale = 1.25
+            pytesseract.pytesseract.tesseract_cmd = 'D:/program/Tesseract-OCR/tesseract.exe'
         else:
             raise
         print(game_left_top)
@@ -33,7 +36,6 @@ class Macro_Baram_Cla():
             raise        
         self.game_region = (game_left_top[0][0], game_left_top[0][1], 1200, 900)
         self.hpmp_cut_region = (1002, 750, 172, 50)
-        # self.kingq_cut_region = (320, 220, 400, 300)
         self.left_coord_cut_region = (999, 850, 75, 23)
         self.right_coord_cut_region = (1082, 850, 75, 23)
         self.game_screen_region = (25,20,765,675)
