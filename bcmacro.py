@@ -15,18 +15,18 @@ pyautogui.FAILSAFE = False
 class Macro_Baram_Cla():
     def __init__(self):
         # 매크로 상태 및 설정
-        self.monitor_mode = 'normal' ###########################
+        self.monitor_mode = 'wide' ###########################
         ######################################################
         print('wait 5sec')
         time.sleep(5)
         screenshot = pyautogui.screenshot(region=None, allScreens=True)
         if self.monitor_mode == 'normal':
-	        game_left_top = image_detection(screenshot, image_path_list=['./image/game_scr.png'], confidence=0.6, merge_thres=50, show=False, location='left_top')
-        	self.monitor_scale = 1
+            game_left_top = image_detection(screenshot, image_path_list=['./image/game_scr.png'], confidence=0.6, merge_thres=50, show=False, location='left_top')
+            self.monitor_scale = 1
             pytesseract.pytesseract.tesseract_cmd = 'C:/Program Files/Tesseract-OCR/tesseract.exe'
         elif self.monitor_mode == 'wide':
-        	game_left_top = image_detection(screenshot, image_path_list=['./image/game_scr_wide.png'], confidence=0.7, merge_thres=50, show=False, location='left_top')
-        	self.monitor_scale = 1.25
+            game_left_top = image_detection(screenshot, image_path_list=['./image/game_scr_wide.png'], confidence=0.7, merge_thres=50, show=False, location='left_top')
+            self.monitor_scale = 1.25
             pytesseract.pytesseract.tesseract_cmd = 'D:/program/Tesseract-OCR/tesseract.exe'
         else:
             raise
