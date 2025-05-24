@@ -122,10 +122,14 @@ def find_coordinate(coordinate_screenshot, confidence=0.7, merge_thres=5, width=
     coordinate = coordinate[0]*1000 + coordinate[1]*100 + coordinate[2]*10 + coordinate[3]
     return coordinate
 
-def get_current_coordinate(screenshot, left_cut_region = (1060,905,85,25), right_cut_region = (1150,905,85,25), confidence=0.7, merge_thres=5, width=75):
+def get_current_coordinate(screenshot, left_cut_region = (1060,905,85,25), right_cut_region = (1150,905,85,25), confidence=0.7, merge_thres=5, width=75, mapname_cut_region=None):
     screenshot_cut_lc = capture_and_crop(screenshot, left_cut_region)
     coord_x = find_coordinate(screenshot_cut_lc, confidence, merge_thres, width)
     screenshot_cut_rc = capture_and_crop(screenshot, right_cut_region)
     coord_y = find_coordinate(screenshot_cut_rc, confidence, merge_thres, width)
-    return (coord_x, coord_y)
+    if mapname_cut_region is not None:
+        mapname = extract_text_from_image(capture_and_crop(screenshot, mapname_cut_region), cut_region=(1), config=r'--oem 1 --psm 6').strip().replace(' ','')
+        return (coord_x, coord_y, mapname)
+    else:
+        return (coord_x, coord_y)
     
