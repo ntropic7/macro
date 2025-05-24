@@ -674,7 +674,7 @@ class Macro_Baram_Cla():
                     (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='x', target_coordinate=[6,7], avoid_list=[[keyboard.Key.down], [keyboard.Key.down, keyboard.Key.down]], in_mapname=['동부여융가입구', '동부여용가입구'])
                     (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='y', target_coordinate=3, avoid_list=[[keyboard.Key.left], [keyboard.Key.right]], in_mapname=['동부여융가입구', '동부여용가입구'])
                     (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='x', target_coordinate=[6,7], avoid_list=[[keyboard.Key.down], [keyboard.Key.down, keyboard.Key.down]], in_mapname=['동부여융가입구', '동부여용가입구'])
-                    while (mapname==['동부여융가입구', '동부여용가입구']):
+                    while (mapname in ['동부여융가입구', '동부여용가입구']):
                         if not self.state['auto_move']:
                             raise
                         self.keyboard_controller.press(keyboard.Key.up)
@@ -683,7 +683,7 @@ class Macro_Baram_Cla():
                         screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
                         (cur_x, cur_y, mapname) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region, mapname_cut_region=self.mapname_region)
                     # 1층 안에서 이동
-                    (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='x', target_coordinate=[7,8], avoid_list=[], in_mapname=['제2동부여용가1', '제2동부여용가1'])
+                    (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='x', target_coordinate=[7,8], avoid_list=[], in_mapname=['제2동부여융가1', '제2동부여용가1'])
                     (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='y', target_coordinate=5, avoid_list=[[keyboard.Key.left], [keyboard.Key.right, keyboard.Key.right]])
                     (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='x', target_coordinate=11, avoid_list=[[keyboard.Key.up], [keyboard.Key.down, keyboard.Key.down]])
                     (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='y', target_coordinate=[3,4], avoid_list=[[keyboard.Key.left], [keyboard.Key.right, keyboard.Key.right]])
@@ -760,6 +760,11 @@ class Macro_Baram_Cla():
         type_list = ['out_palace', 'go_haunted_house', 'go_west_buyeo', 'go_west_haunted', 'in_haunted_house', 'in_west_haunted', 'go_buyeo', 'go_palace']
         idx = type_list.index(self.state['move_type'])  # 현재 값의 인덱스 찾기
         self.state['move_type'] = type_list[(idx + 1) % len(type_list)]  # 다음 값으로 순환
+
+    def change_ap_type(self):
+        type_list = [0,1,2,3]
+        idx = type_list.index(self.auto_pilot_state)  # 현재 값의 인덱스 찾기
+        self.auto_pilot_state = type_list[(idx + 1) % len(type_list)]  # 다음 값으로 순환
                     
     def auto_king_q(self):
         while self.state['kingq']:
@@ -850,11 +855,8 @@ class Macro_Baram_Cla():
 
     def auto_pilot(self):
         delay = random.uniform(0.3, 0.4)
-        # self.auto_pilot_state = 1
         while self.state['auto_pilot']:
-            self.mp_thres = 0.9
             if self.auto_pilot_state == 0:
-                self.auto_pilot_state = 1
                 # 왕퀘 받기
                 self.state['kingq'] = True
                 self.target_monster = 'Nobody'
@@ -864,6 +866,9 @@ class Macro_Baram_Cla():
                 self.state['auto_move'] = True
                 self.auto_move()
                 time.sleep(delay)
+                self.auto_pilot_state = 1
+                
+            elif self.auto_pilot_state == 1:
                 self.state['move_type'] = 'go_west_buyeo'
                 self.state['auto_move'] = True
                 self.auto_move()
@@ -872,6 +877,7 @@ class Macro_Baram_Cla():
                 self.state['auto_move'] = True
                 self.auto_move()
                 time.sleep(delay)
+                self.mp_thres = 0.9
                 self._active_skill(skill_name='boho', target_iter=1)
                 self._active_skill(skill_name='muzang', target_iter=1)
                 self.auto_gongj(run=False)
@@ -880,13 +886,13 @@ class Macro_Baram_Cla():
                 self.keyboard_controller.press(keyboard.Key.esc)
                 self.keyboard_controller.release(keyboard.Key.esc)
                 time.sleep(delay)
-                
-            elif self.auto_pilot_state == 1:
                 self.auto_pilot_state = 2
+                
+            elif self.auto_pilot_state == 2:
                 self.state['move_type'] = 'in_west_haunted'
                 self.state['auto_move'] = False
                 self.start_auto_move()
-                
+            
                 screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
                 (cur_x, cur_y, mapname) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region, mapname_cut_region=self.mapname_region)
                 while cur_x > 1:
@@ -911,11 +917,9 @@ class Macro_Baram_Cla():
                 self.state['auto_move'] = False
                 self.state['move_pause'] = False
                 time.sleep(delay)
-                # self.stop_macro()
-                # self.start_auto_pilot()
+                self.auto_pilot_state = 3
                 
-            elif self.auto_pilot_state == 2:
-                self.auto_pilot_state = 0
+            elif self.auto_pilot_state == 3:
                 # 부여 이동
                 self.state['move_type'] = 'go_buyeo'
                 self.state['auto_move'] = True
@@ -927,6 +931,7 @@ class Macro_Baram_Cla():
                 self.auto_move()
                 time.sleep(delay)
                 # self.start_auto_pilot()
+                self.auto_pilot_state = 0
 
     def start_macro(self):
         """매크로 시작"""
@@ -1017,6 +1022,9 @@ class Macro_Baram_Cla():
                 
             elif key.char == '}':
                 self.start_kingq()
+
+            elif key.char == 'O':
+                self.change_ap_type()
                 
         except AttributeError:
             pass
