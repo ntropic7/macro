@@ -110,7 +110,11 @@ def extract_text_from_image(region, cut_region=(360,190,290,230), config=r'--oem
 def find_coordinate(coordinate_screenshot, confidence=0.7, merge_thres=5, width=75):
     coordinate = [0,0,0,0]
     for i in range(10):
-        coord = image_detection(screenshot=coordinate_screenshot, image_path_list=[f'./image/num{i}.png'], confidence=confidence, merge_thres=merge_thres, show=False, location='center')
+        if i in (1,6):
+            image_path_list = [f'./image/num{i}.png', f'./image/num{i}_2.png']
+        else:
+            image_path_list=[f'./image/num{i}.png']
+        coord = image_detection(screenshot=coordinate_screenshot, image_path_list=image_path_list, confidence=confidence, merge_thres=merge_thres, show=False, location='center')
         for x,y in coord:
             if x/width <= 0.25:
                 coordinate[0] = i

@@ -366,29 +366,6 @@ class Macro_Baram_Cla():
                             self.active_spell_auto(skill_name='hellfire', macro_type=macro_type, target_iter=[1], active_iter=1, change_dir=False, auto_bomu=False, auto_mabi=False, direction='stay')
                             time.sleep(5)
                             continue
-
-                    # nearest_x, nearest_y = (0, 0)
-                    # dist = 10000
-                    # for x,y in avail_cn:
-                    #     n_dist = abs(me[0][0] - x) + abs(me[0][1] - y)
-                    #     if n_dist < dist:
-                    #         dist = n_dist
-                    #         nearest_x, nearest_y = (x, y)
-                    # target_x = self.game_region[0] + self.game_screen_region[0] + nearest_x
-                    # target_y = self.game_region[1] + self.game_screen_region[1] + nearest_y
-                    # if not self.state['macro_running'] or not self.state['macro_type']==macro_type:
-                    #     print('macro stop')
-                    #     raise
-                    # self.active_spell_auto(skill_name='tab', macro_type=macro_type, target_iter=[1], active_iter=1, change_dir=False, auto_bomu=False, auto_mabi=False, mouse_target=(target_x, target_y))
-                    # time.sleep(0.1)
-                    # extracted_text = extract_text_from_image(self.game_region, cut_region=self.message_region, config=r'--oem 1 --psm 6')
-                    # extracted_text = extracted_text.replace(' ','')
-                    # print(extracted_text)
-                    # if '처녀' in extracted_text:
-                    #     # self.active_spell_auto(skill_name='curse', macro_type=macro_type, target_iter=[1], active_iter=1, change_dir=False, auto_bomu=False, auto_mabi=False, direction='stay')
-                    #     self.active_spell_auto(skill_name='hellfire', macro_type=macro_type, target_iter=[1], active_iter=1, change_dir=False, auto_bomu=False, auto_mabi=False, direction='stay')
-                    #     time.sleep(5)
-
                 self.state['move_pause'] = False
                     
             elif self.state['macro_type']=='mabi':
@@ -453,6 +430,7 @@ class Macro_Baram_Cla():
             time.sleep(0.1)
         if not self.state['auto_move']:
             raise
+        print(cur_x, cur_y)
         if coordinate_type == 'x':
             cur = cur_x
         elif coordinate_type == 'y':
@@ -499,6 +477,8 @@ class Macro_Baram_Cla():
                     # 방향전환 포함 2회
                     for avoid_key in avoid_key_list:
                         for _ in range(2):
+                            while self.state['move_pause']:
+                                time.sleep(0.1)
                             if not self.state['auto_move']:
                                 raise
                             self.keyboard_controller.release(move_dir)
