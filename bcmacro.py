@@ -74,6 +74,7 @@ class Macro_Baram_Cla():
         self.bomu_time = time.time() - 999
         self.mabi_time = time.time() - 999
         self.target_monster = 'Nobody'
+        self.auto_pilot_state = 'kingq_out_palace'
 
         self.mi = 0
         self.move_start_time = 0
@@ -88,8 +89,6 @@ class Macro_Baram_Cla():
         self.auto_move_button = None
         self.auto_pilot_button = None
 
-        ## 임시
-        self.auto_pilot_state = 0
         
     def _active_skill(self, skill_name, target_iter=1, reset_tap=False, mouse_target=None, direction='skill_mapping'):
         """스킬 키 동작 수행"""
@@ -430,7 +429,12 @@ class Macro_Baram_Cla():
             time.sleep(0.1)
         if not self.state['auto_move']:
             raise
-        print(cur_x, cur_y)
+        screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
+        if in_mapname!='all':
+            (cur_x,cur_y,mapname) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region, mapname_cut_region=self.mapname_region)
+        else:
+            (cur_x,cur_y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region)
+        print(f'target_move:{mapname}, {coordinate_type}, {target_coordinate}, cur_x:{cur_x}, cur_y:{cur_y}')
         if coordinate_type == 'x':
             cur = cur_x
         elif coordinate_type == 'y':
@@ -463,7 +467,7 @@ class Macro_Baram_Cla():
             if in_mapname!='all':
                 (x,y,mapname) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region, mapname_cut_region=self.mapname_region)
             else:
-                (x,y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region, mapname_cut_region=self.mapname_region)
+                (x,y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region)
 
             if cur_x != x or cur_y != y:
                 self.mi = 0
@@ -484,7 +488,7 @@ class Macro_Baram_Cla():
                     if in_mapname!='all':
                         (x,y,mapname) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region, mapname_cut_region=self.mapname_region)
                     else:
-                        (x,y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region, mapname_cut_region=self.mapname_region)
+                        (x,y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region)
                     self.mi += 1
                     if ((coordinate_type == 'x' and cur_x != x) or (coordinate_type == 'y' and cur_y != y)):
                         self.mi = 0
@@ -516,7 +520,7 @@ class Macro_Baram_Cla():
                     if in_mapname!='all':
                         (x,y,mapname) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region, mapname_cut_region=self.mapname_region)
                     else:
-                        (x,y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region, mapname_cut_region=self.mapname_region)
+                        (x,y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region)
                     self.mi += 1
                     if ((coordinate_type == 'x' and cur_x != x) or (coordinate_type == 'y' and cur_y != y)):
                         self.mi = 0
@@ -711,8 +715,10 @@ class Macro_Baram_Cla():
                         (cur_x, cur_y, mapname) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region, mapname_cut_region=self.mapname_region)
                     # 1층 안에서 이동
                     (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='x', target_coordinate=[7,8], avoid_list=[], in_mapname=['제2동부여융가1', '제2동부여용가1'])
+                    (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='x', target_coordinate=[7,8], avoid_list=[], in_mapname=['제2동부여융가1', '제2동부여용가1'])
                     (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='y', target_coordinate=5, avoid_list=[[keyboard.Key.left], [keyboard.Key.right, keyboard.Key.right]])
                     (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='x', target_coordinate=11, avoid_list=[[keyboard.Key.up], [keyboard.Key.down, keyboard.Key.down]])
+                    (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='y', target_coordinate=[3,4], avoid_list=[[keyboard.Key.left], [keyboard.Key.right, keyboard.Key.right]])
                     (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='y', target_coordinate=[3,4], avoid_list=[[keyboard.Key.left], [keyboard.Key.right, keyboard.Key.right]])
                     (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='x', target_coordinate=20, avoid_list=[[keyboard.Key.down], [keyboard.Key.up], [keyboard.Key.down, keyboard.Key.down], [keyboard.Key.up, keyboard.Key.up]])
                     (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='y', target_coordinate=4, avoid_list=[[keyboard.Key.left], [keyboard.Key.right, keyboard.Key.right]])
@@ -789,7 +795,7 @@ class Macro_Baram_Cla():
         self.state['move_type'] = type_list[(idx + 1) % len(type_list)]  # 다음 값으로 순환
 
     def change_ap_type(self):
-        type_list = [0,1,2,3]
+        type_list = ['kingq_out_palace', 'go_west_buyeo_haunted', 'auto_hunt_in_west_haunted', 'go_buyeo_palace']
         idx = type_list.index(self.auto_pilot_state)  # 현재 값의 인덱스 찾기
         self.auto_pilot_state = type_list[(idx + 1) % len(type_list)]  # 다음 값으로 순환
                     
@@ -883,7 +889,7 @@ class Macro_Baram_Cla():
     def auto_pilot(self):
         delay = random.uniform(0.3, 0.4)
         while self.state['auto_pilot']:
-            if self.auto_pilot_state == 0:
+            if self.auto_pilot_state == 'kingq_out_palace':
                 # 왕퀘 받기
                 self.state['kingq'] = True
                 self.target_monster = 'Nobody'
@@ -893,9 +899,9 @@ class Macro_Baram_Cla():
                 self.state['auto_move'] = True
                 self.auto_move()
                 time.sleep(delay)
-                self.auto_pilot_state = 1
+                self.auto_pilot_state = 'go_west_buyeo_haunted'
                 
-            elif self.auto_pilot_state == 1:
+            elif self.auto_pilot_state == 'go_west_buyeo_haunted':
                 self.state['move_type'] = 'go_west_buyeo'
                 self.state['auto_move'] = True
                 self.auto_move()
@@ -913,9 +919,9 @@ class Macro_Baram_Cla():
                 self.keyboard_controller.press(keyboard.Key.esc)
                 self.keyboard_controller.release(keyboard.Key.esc)
                 time.sleep(delay)
-                self.auto_pilot_state = 2
+                self.auto_pilot_state = 'auto_hunt_in_west_haunted'
                 
-            elif self.auto_pilot_state == 2:
+            elif self.auto_pilot_state == 'auto_hunt_in_west_haunted':
                 self.state['move_type'] = 'in_west_haunted'
                 self.state['auto_move'] = False
                 self.start_auto_move()
@@ -944,9 +950,9 @@ class Macro_Baram_Cla():
                 self.state['auto_move'] = False
                 self.state['move_pause'] = False
                 time.sleep(delay)
-                self.auto_pilot_state = 3
+                self.auto_pilot_state = 'go_buyeo_palace'
                 
-            elif self.auto_pilot_state == 3:
+            elif self.auto_pilot_state == 'go_buyeo_palace':
                 # 부여 이동
                 self.state['move_type'] = 'go_buyeo'
                 self.state['auto_move'] = True
@@ -958,7 +964,7 @@ class Macro_Baram_Cla():
                 self.auto_move()
                 time.sleep(delay)
                 # self.start_auto_pilot()
-                self.auto_pilot_state = 0
+                self.auto_pilot_state = 'kingq_out_palace'
 
     def start_macro(self):
         """매크로 시작"""
