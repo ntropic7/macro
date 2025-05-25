@@ -193,7 +193,7 @@ class Macro_Baram_Cla():
                         self.keyboard_controller.release(keyboard.Key.ctrl)
                         time.sleep(random.uniform(0.04, 0.04 + 0.01))
                     self._active_skill(skill_name='gongj', target_iter=1)
-                    time.sleep(0.1)
+                    time.sleep(0.2)
                     extracted_text = extract_text_from_image(self.game_region, cut_region=self.message_region, config=r'--oem 1 --psm 6')
                     extracted_text = extracted_text.replace(' ','')
                 self._active_skill(skill_name='heal', target_iter=5)
@@ -329,7 +329,7 @@ class Macro_Baram_Cla():
                 avail_cn = [(x, y) for (x, y) in cn if abs((x//45+1) - (me[0][0]//45+1)) <= 9 and abs((y//45+1) - (me[0][1]//45+1)) <= 8]
                 
                 print(len(avail_cn))
-                if len(avail_cn) > 0:
+                if (len(avail_cn) > 0) and (self.state['macro_running']):
                     self.state['move_pause'] = True
                     # self.active_spell_auto(skill_name='mabi', macro_type=macro_type, target_iter=[1], active_iter=len(avail_cn)*2, change_dir=True, auto_bomu=False, auto_mabi=False)
                     self.auto_gongj(run=False)
@@ -364,7 +364,7 @@ class Macro_Baram_Cla():
                         if ('중독' in last_text) or ('이미' in last_text) or ('이며' in last_text):
                             self.active_spell_auto(skill_name='hellfire', macro_type=macro_type, target_iter=[1], active_iter=1, change_dir=False, auto_bomu=False, auto_mabi=False, direction='stay')
                             time.sleep(5)
-                            continue
+                            break
                 self.state['move_pause'] = False
                     
             elif self.state['macro_type']=='mabi':
@@ -716,8 +716,8 @@ class Macro_Baram_Cla():
                         (cur_x, cur_y, mapname) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region, mapname_cut_region=self.mapname_region)
                     # 1층 안에서 이동
                     (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='x', target_coordinate=[7,8], avoid_list=[], in_mapname=['제2동부여융가1', '제2동부여용가1'])
-                    (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='y', target_coordinate=1, avoid_list=[[keyboard.Key.left], [keyboard.Key.right]], in_mapname=['동부여융가입구', '동부여용가입구']) #다른필드에서 복귀
-                    (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='y', target_coordinate=5, avoid_list=[[keyboard.Key.left], [keyboard.Key.right, keyboard.Key.right]], in_mapname=['제2동부여융가1', '제2동부여용가1'])
+                    (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='y', target_coordinate=1, avoid_list=[[keyboard.Key.left], [keyboard.Key.right], [keyboard.Key.left,keyboard.Key.left]], in_mapname=['동부여융가입구', '동부여용가입구']) #다른필드에서 복귀
+                    (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='y', target_coordinate=5, avoid_list=[[keyboard.Key.left], [keyboard.Key.left, keyboard.Key.left], [keyboard.Key.right]], in_mapname=['제2동부여융가1', '제2동부여용가1'])
                     (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='x', target_coordinate=11, avoid_list=[[keyboard.Key.up], [keyboard.Key.down, keyboard.Key.down]], in_mapname=['제2동부여융가1', '제2동부여용가1'])
                     (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='y', target_coordinate=[3,4], avoid_list=[[keyboard.Key.left], [keyboard.Key.right, keyboard.Key.right]], in_mapname=['제2동부여융가1', '제2동부여용가1'])
                     (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='x', target_coordinate=20, avoid_list=[[keyboard.Key.down], [keyboard.Key.up], [keyboard.Key.down, keyboard.Key.down], [keyboard.Key.up, keyboard.Key.up]], in_mapname=['제2동부여융가1', '제2동부여용가1'])
@@ -833,56 +833,55 @@ class Macro_Baram_Cla():
             while autoq == 1:
                 screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
                 king_coord2 = image_detection(screenshot, ['./image/king.png'], 0.6, show=False)
-
                 if len(king_coord2) > 0:
                     king_coord = king_coord2
-                else:
-                    # 첫 번째 좌표로 마우스 이동
-                    target_x = self.game_region[0] + king_coord[0][0]
-                    target_y = self.game_region[1] + king_coord[0][1]
-                    pyautogui.moveTo(target_x*self.monitor_scale, target_y*self.monitor_scale, duration=0.1)  # 마우스 이동 (0.5초 동안 이동)
-                    pyautogui.click()
-                    pyautogui.moveTo(self.game_region[0]*self.monitor_scale, self.game_region[1]*self.monitor_scale, duration=0.1)  # 마우스 이동 (0.5초 동안 이동)
 
-                    # 퀘스트 시작
-                    for _ in range(100):
-                        if not self.state['kingq']:
-                            raise
-                        extracted_text = extract_text_from_image(self.game_region, cut_region=self.kingq_cut_region, config=r'--oem 1 --psm 6')
-                        extracted_text = extracted_text.replace(' ','')
-                        print(extracted_text[:10])
+                # 첫 번째 좌표로 마우스 이동
+                target_x = self.game_region[0] + king_coord[0][0]
+                target_y = self.game_region[1] + king_coord[0][1]
+                pyautogui.moveTo(target_x*self.monitor_scale, target_y*self.monitor_scale, duration=0.1)  # 마우스 이동 (0.5초 동안 이동)
+                pyautogui.click()
+                pyautogui.moveTo(self.game_region[0]*self.monitor_scale, self.game_region[1]*self.monitor_scale, duration=0.1)  # 마우스 이동 (0.5초 동안 이동)
+
+                # 퀘스트 시작
+                for _ in range(100):
+                    if not self.state['kingq']:
+                        raise
+                    extracted_text = extract_text_from_image(self.game_region, cut_region=self.kingq_cut_region, config=r'--oem 1 --psm 6')
+                    extracted_text = extracted_text.replace(' ','')
+                    print(extracted_text[:10])
+                    
+                    p = 0
+                    for speech in self.kings_speech:
+                        if speech in extracted_text:
+                            p = 1
+                    if p == 0:
+                        print('no king speech')
+                        break
                         
-                        p = 0
-                        for speech in self.kings_speech:
-                            if speech in extracted_text:
-                                p = 1
-                        if p == 0:
-                            print('no king speech')
-                            break
-                            
-                        if '어명이오!' in extracted_text:
-                            self.target_monster = extracted_text.split('!')[1].split('을')[0].strip()
-                            break
-                        if '지워졌으니' in extracted_text or '받든' in extracted_text:
-                            self.target_monster = 'Nobody'
-                            break
-                            
-                        for __ in range(1):
-                            self.keyboard_controller.press(keyboard.Key.right)
-                            self.keyboard_controller.release(keyboard.Key.right)
-                            time.sleep(delay)
-                            self.keyboard_controller.press(keyboard.Key.left)
-                            self.keyboard_controller.release(keyboard.Key.left)
-                            time.sleep(delay)
-                        self.keyboard_controller.press(keyboard.Key.enter)
-                        self.keyboard_controller.release(keyboard.Key.enter)
+                    if '어명이오!' in extracted_text:
+                        self.target_monster = extracted_text.split('!')[1].split('을')[0].strip()
+                        break
+                    if '지워졌으니' in extracted_text or '받든' in extracted_text:
+                        self.target_monster = 'Nobody'
+                        break
+                        
+                    for __ in range(1):
+                        self.keyboard_controller.press(keyboard.Key.right)
+                        self.keyboard_controller.release(keyboard.Key.right)
                         time.sleep(delay)
-
+                        self.keyboard_controller.press(keyboard.Key.left)
+                        self.keyboard_controller.release(keyboard.Key.left)
+                        time.sleep(delay)
                     self.keyboard_controller.press(keyboard.Key.enter)
                     self.keyboard_controller.release(keyboard.Key.enter)
+                    time.sleep(delay)
 
-                    if self.target_monster in self.kingq_wish:
-                        break
+                self.keyboard_controller.press(keyboard.Key.enter)
+                self.keyboard_controller.release(keyboard.Key.enter)
+
+                if self.target_monster in self.kingq_wish:
+                    break
             print('king q end')
             self.state['kingq'] = False
             self.kingq_button.config(state=tk.NORMAL)
@@ -950,6 +949,7 @@ class Macro_Baram_Cla():
                     # print(extracted_text)
 
                 self.stop_macro()
+                self.state['macro_running'] = False
                 self.state['auto_move'] = False
                 self.state['move_pause'] = False
                 time.sleep(delay)
