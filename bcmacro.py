@@ -333,7 +333,7 @@ class Macro_Baram_Cla():
                 me = image_detection(game_screen, image_path_list=['./image/me_back.png', './image/me_left.png', './image/me_right.png', './image/me_front.png'], confidence=0.65, merge_thres=45, show=False, location='bottom') 
                 if len(me) == 0:
                     continue
-                cn = image_detection(game_screen, image_path_list=['./image/cn_back.png', './image/cn_left.png', './image/cn_right.png', './image/cn_front.png', './image/cn_back2.png', './image/cn_left2.png', './image/cn_right2.png', './image/cn_front2.png'], confidence=0.7, merge_thres=45, show=False, location='bottom')
+                cn = image_detection(game_screen, image_path_list=['./image/cn_back.png', './image/cn_left.png', './image/cn_right.png', './image/cn_front.png', './image/cn_back2.png', './image/cn_left2.png', './image/cn_right2.png', './image/cn_front2.png'], confidence=0.75, merge_thres=45, show=False, location='bottom')
                 me_x, me_y = (me[0][0]//45 + 1, me[0][1]//45 + 1)
                 avail_cn = [(x, y) for (x, y) in cn if abs((x//45+1) - (me[0][0]//45+1)) <= 9 and abs((y//45+1) - (me[0][1]//45+1)) <= 8]
                 
@@ -357,7 +357,7 @@ class Macro_Baram_Cla():
                     if (len(me)==0):
                         self.state['move_pause'] = False
                         continue
-                    cn = image_detection(game_screen, image_path_list=['./image/cn_back.png', './image/cn_left.png', './image/cn_right.png', './image/cn_front.png', './image/cn_back2.png', './image/cn_left2.png', './image/cn_right2.png', './image/cn_front2.png'], confidence=0.7, merge_thres=45, show=False, location='bottom')
+                    cn = image_detection(game_screen, image_path_list=['./image/cn_back.png', './image/cn_left.png', './image/cn_right.png', './image/cn_front.png', './image/cn_back2.png', './image/cn_left2.png', './image/cn_right2.png', './image/cn_front2.png'], confidence=0.75, merge_thres=45, show=False, location='bottom')
                     me_x, me_y = (me[0][0]//45 + 1, me[0][1]//45 + 1)
                     avail_cn = [(x, y) for (x, y) in cn if abs((x//45+1) - (me[0][0]//45+1)) <= 9 and abs((y//45+1) - (me[0][1]//45+1)) <= 8]
                     if (len(avail_cn)==0):
