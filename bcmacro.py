@@ -332,6 +332,7 @@ class Macro_Baram_Cla():
                 game_screen = capture_and_crop(screenshot, self.game_screen_region)
                 me = image_detection(game_screen, image_path_list=['./image/me_back.png', './image/me_left.png', './image/me_right.png', './image/me_front.png'], confidence=0.65, merge_thres=45, show=False, location='bottom') 
                 if len(me) == 0:
+                    print('not me')
                     continue
                 cn = image_detection(game_screen, image_path_list=['./image/cn_back.png', './image/cn_left.png', './image/cn_right.png', './image/cn_front.png', './image/cn_back2.png', './image/cn_left2.png', './image/cn_right2.png', './image/cn_front2.png'], confidence=0.75, merge_thres=45, show=False, location='bottom')
                 me_x, me_y = (me[0][0]//45 + 1, me[0][1]//45 + 1)
@@ -350,12 +351,13 @@ class Macro_Baram_Cla():
                     if not self.state['macro_running'] or not self.state['macro_type']==macro_type:
                         print('macro stop')
                         raise
-
+                    
                     screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
                     game_screen = capture_and_crop(screenshot, self.game_screen_region)
                     me = image_detection(game_screen, image_path_list=['./image/me_back.png', './image/me_left.png', './image/me_right.png', './image/me_front.png'], confidence=0.65, merge_thres=45, show=False, location='bottom') 
                     if (len(me)==0):
                         self.state['move_pause'] = False
+                        print('not me')
                         continue
                     cn = image_detection(game_screen, image_path_list=['./image/cn_back.png', './image/cn_left.png', './image/cn_right.png', './image/cn_front.png', './image/cn_back2.png', './image/cn_left2.png', './image/cn_right2.png', './image/cn_front2.png'], confidence=0.75, merge_thres=45, show=False, location='bottom')
                     me_x, me_y = (me[0][0]//45 + 1, me[0][1]//45 + 1)
@@ -992,9 +994,12 @@ class Macro_Baram_Cla():
                     self.keyboard_controller.press(keyboard.Key.down)
                     self.keyboard_controller.release(keyboard.Key.down)
                     while ('성황' in mapname):
+                        print(f"[{datetime.now()}][die] map:{mapname}, cur_x:{cur_x}, cur_y:{cur_y}")
                         if not self.state['auto_pilot']:
                             raise
                         self.keyboard_controller.press(keyboard.Key.down)
+                        time.sleep(3)
+                        self.keyboard_controller.release(keyboard.Key.down)
                         time.sleep(delay)
                         screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
                         (cur_x, cur_y, mapname) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region, mapname_cut_region=self.mapname_region)
