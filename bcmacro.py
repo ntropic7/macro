@@ -17,7 +17,7 @@ pyautogui.FAILSAFE = False
 class Macro_Baram_Cla():
     def __init__(self):
         # 매크로 상태 및 설정
-        self.monitor_mode = 'wide' ###########################
+        self.monitor_mode = 'wide' ########################### normal, wide
         ######################################################
         print('wait 5sec')
         time.sleep(5)
@@ -433,24 +433,29 @@ class Macro_Baram_Cla():
             self.auto_heal(run=True)
             time.sleep(random.uniform(0.05, 0.05 + 0.01))
 
-    def target_move(self, cur_x, cur_y, mapname, coordinate_type, target_coordinate, avoid_list, in_mapname='all', every_rel=False):
+    def target_move(self, cur_x, cur_y, mapname, coordinate_type, target_coordinate, boundary_coordinate=None, avoid_list=[], in_mapname='all', move_only=False, exact_move=False, mi_att=True):
         while self.state['move_pause']:
             time.sleep(0.1)
         if not self.state['auto_move']:
             raise
-        screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
-        if in_mapname!='all':
-            (cur_x,cur_y,mapname) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region, mapname_cut_region=self.mapname_region)
-        else:
-            (cur_x,cur_y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region)
-        print(f'[{datetime.now()}]target_move:{mapname}, {coordinate_type}, {target_coordinate}, cur_x:{cur_x}, cur_y:{cur_y}')
+        if not move_only:
+            screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
+            if (in_mapname!='all'):
+                (cur_x,cur_y,mapname) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region, mapname_cut_region=self.mapname_region)
+            else:
+                (cur_x,cur_y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region)
+            print(f'[{datetime.now()}]target_move:{mapname}, target:{coord_target}, bounday:{coord_boundary}, cur_x:{cur_x}, cur_y:{cur_y}')
+            self.mi = 0
+        ti=0
         if coordinate_type == 'x':
             cur = cur_x
+            boundary_type = 'y'
         elif coordinate_type == 'y':
             cur = cur_y
-        self.mi = 0
+            boundary_type = 'x'
         delay = random.uniform(0.3, 0.4)
         move_dir = keyboard.Key.right
+        rmove_dir = keyboard.Key.left
         if type(target_coordinate) != list:
             target_coordinate = [target_coordinate]
         if type(in_mapname) != list:
@@ -461,60 +466,63 @@ class Macro_Baram_Cla():
                 time.sleep(0.1)
             if not self.state['auto_move']:
                 raise
+            
             if cur < np.min(target_coordinate):
                 if coordinate_type == 'x':
                     move_dir = keyboard.Key.right
+                    rmove_dir = keyboard.Key.left
                 elif coordinate_type == 'y':
                     move_dir = keyboard.Key.down
+                    rmove_dir = keyboard.Key.up
             elif cur > np.max(target_coordinate):
                 if coordinate_type == 'x':
                     move_dir = keyboard.Key.left
+                    rmove_dir = keyboard.Key.right
                 elif coordinate_type == 'y':
                     move_dir = keyboard.Key.up
+                    rmove_dir = keyboard.Key.down
+                    
+            if boundary_coordinate is not None:
+                b_avoid_list = [[rmove_dir], [move_dir], [rmove_dir, rmove_dir], [move_dir]]
+                self.target_move(cur_x=cur_x, cur_y=cur_y, mapname=mapname, coordinate_type=boundary_type, target_coordinate=boundary_coordinate, avoid_list=b_avoid_list, in_mapname=in_mapname, move_only=True, exact_move=True, mi_att=False)
+            
             self.keyboard_controller.press(move_dir)
-            if every_rel:
+            if exact_move:
                 self.keyboard_controller.release(move_dir)
                 time.sleep(0.1)
+            elif ti < 2:
+                self.keyboard_controller.release(move_dir)
+                
             screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
             if in_mapname!='all':
                 (x,y,mapname) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region, mapname_cut_region=self.mapname_region)
             else:
                 (x,y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region)
 
-            if cur_x != x or cur_y != y:
+            if (cur_x != x or cur_y != y):
                 self.mi = 0
-            self.mi += 1
-            
+            self.mi += 1  
+            ti += 1
             print(f"mi : {self.mi}, cur_x:{cur_x}, cur_y:{cur_y}, x:{x}, y:{y}")
-            if self.mi >=3:
+                
+            if self.mi >= 10:
                 print(f"avoid:{avoid_list}")
-            while (self.mi >= 3) and ((coordinate_type == 'x' and cur_x == x) or (coordinate_type == 'y' and cur_y == y)) and (time.time() - self.move_start_time <= self.move_time_limit) and ((mapname in in_mapname) or ('all' in in_mapname)):
+            while (self.mi >= 10) and ((coordinate_type == 'x' and cur_x == x) or (coordinate_type == 'y' and cur_y == y)) and (time.time() - self.move_start_time <= self.move_time_limit) and ((mapname in in_mapname) or ('all' in in_mapname)):
                 while self.state['move_pause']:
                     time.sleep(0.1)
                 if not self.state['auto_move']:
                     raise
                 print(f"avoid - mi : {self.mi}, cur_x:{cur_x}, cur_y:{cur_y}, x:{x}, y:{y}")
-                if len(avoid_list) == 0:
-                    self.keyboard_controller.press(move_dir)
-                    screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
-                    if in_mapname!='all':
-                        (x,y,mapname) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region, mapname_cut_region=self.mapname_region)
-                    else:
-                        (x,y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region)
-                    self.mi += 1
-                    if ((coordinate_type == 'x' and cur_x != x) or (coordinate_type == 'y' and cur_y != y)):
-                        self.mi = 0
-                        break
-                    if self.mi >= 9:
-                        self.keyboard_controller.press('o')
-                        self.keyboard_controller.release('o')
-                        self.keyboard_controller.press('6')
-                        self.keyboard_controller.release('6')
-                        for _ in range(2):
-                            self.keyboard_controller.release(move_dir)
-                            self.keyboard_controller.press(move_dir)
-                            self.keyboard_controller.release(move_dir)
-                            time.sleep(delay)
+                self.keyboard_controller.release(move_dir)
+                self.keyboard_controller.press('o')
+                self.keyboard_controller.release('o')
+                time.sleep(delay)
+                if mi_att:
+                    self.keyboard_controller.press('6')
+                    self.keyboard_controller.release('6')
+                time.sleep(delay)
+                self.keyboard_controller.press(move_dir)
+                self.keyboard_controller.release(move_dir)
                 for avoid_key_list in avoid_list:
                     # 방향전환 포함 2회
                     for avoid_key in avoid_key_list:
@@ -529,6 +537,7 @@ class Macro_Baram_Cla():
                             time.sleep(delay)
                     for _ in range(2):
                         self.keyboard_controller.press(move_dir)
+                        self.keyboard_controller.release(move_dir)
                         time.sleep(delay)
                     screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
                     if in_mapname!='all':
@@ -537,14 +546,15 @@ class Macro_Baram_Cla():
                         (x,y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region)
                     self.mi += 1
                     if ((coordinate_type == 'x' and cur_x != x) or (coordinate_type == 'y' and cur_y != y)):
-                        self.mi = 0
                         break
-                    if self.mi >= 9:
-                        self.keyboard_controller.press('o')
-                        self.keyboard_controller.release('o')
+                screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
+                if in_mapname!='all':
+                    (x,y,mapname) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region, mapname_cut_region=self.mapname_region)
+                else:
+                    (x,y) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region)
+            elf.mi = 0
             cur_x = x
             cur_y = y
-
             if coordinate_type == 'x':
                 cur = cur_x
             elif coordinate_type == 'y':
@@ -572,6 +582,7 @@ class Macro_Baram_Cla():
                 if self.state['move_type'] == 'out_palace':
                     # 왕궁 나기기
                     self.move_time_limit = 30
+                    # cur_x, cur_y, mapname, coordinate_type, target_coordinate, boundary_coordinate=None, avoid_list=[], in_mapname='all', move_only=False, exact_move=False, mi_att=True
                     (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='y', target_coordinate=38, avoid_list=[], in_mapname='부여성왕궁내부')
                     (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='x', target_coordinate=[12,17], avoid_list=[[keyboard.Key.up]], in_mapname='부여성왕궁내부')
                     
@@ -680,12 +691,12 @@ class Macro_Baram_Cla():
                         screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
                         (cur_x, cur_y, mapname) = get_current_coordinate(screenshot, self.left_coord_cut_region, self.right_coord_cut_region, mapname_cut_region=self.mapname_region)
                     self.keyboard_controller.release(keyboard.Key.up)
-                    (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='x', target_coordinate=12, avoid_list=[[keyboard.Key.down], [keyboard.Key.up,keyboard.Key.up]], in_mapname=['동부여융가입구', '동부여용가입구'], every_rel=True)
+                    (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='x', target_coordinate=12, avoid_list=[[keyboard.Key.down], [keyboard.Key.up,keyboard.Key.up]], in_mapname=['동부여융가입구', '동부여용가입구'], exact_move=True)
                     (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='y', target_coordinate=[11,12], avoid_list=[], in_mapname=['동부여융가입구', '동부여용가입구'])
                     (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='x', target_coordinate=[6,10], avoid_list=[[keyboard.Key.down], [keyboard.Key.right, keyboard.Key.right, keyboard.Key.down]], in_mapname=['동부여융가입구', '동부여용가입구'])
                     (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='x', target_coordinate=[6,7], avoid_list=[], in_mapname=['동부여융가입구', '동부여용가입구'])
                     (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='y', target_coordinate=[4,5], avoid_list=[], in_mapname=['동부여융가입구', '동부여용가입구'])
-                    (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='x', target_coordinate=[6,7], avoid_list=[[keyboard.Key.down], [keyboard.Key.down,keyboard.Key.down]], in_mapname=['동부여융가입구', '동부여용가입구'], every_rel=True)
+                    (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='x', target_coordinate=[6,7], avoid_list=[[keyboard.Key.down], [keyboard.Key.down,keyboard.Key.down]], in_mapname=['동부여융가입구', '동부여용가입구'], exact_move=True)
     
                 elif self.state['move_type'] == 'in_haunted_house':
                     # 흉가 1층 이동
@@ -717,9 +728,9 @@ class Macro_Baram_Cla():
                 elif self.state['move_type'] == 'in_west_haunted':
                     # 2지 동부여 흉가 1층 이동
                     self.move_time_limit = 9999
-                    (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='x', target_coordinate=[6,7], avoid_list=[[keyboard.Key.down], [keyboard.Key.down, keyboard.Key.down]], in_mapname=['동부여융가입구', '동부여용가입구'], every_rel=True)
+                    (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='x', target_coordinate=[6,7], avoid_list=[[keyboard.Key.down], [keyboard.Key.down, keyboard.Key.down]], in_mapname=['동부여융가입구', '동부여용가입구'], exact_move=True)
                     time.sleep(0.5)
-                    (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='x', target_coordinate=[6,7], avoid_list=[[keyboard.Key.down], [keyboard.Key.down, keyboard.Key.down]], in_mapname=['동부여융가입구', '동부여용가입구'], every_rel=True)
+                    (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='x', target_coordinate=[6,7], avoid_list=[[keyboard.Key.down], [keyboard.Key.down, keyboard.Key.down]], in_mapname=['동부여융가입구', '동부여용가입구'], exact_move=True)
                     while (mapname in ['동부여융가입구', '동부여용가입구']):
                         if not self.state['auto_move']:
                             raise
@@ -731,21 +742,21 @@ class Macro_Baram_Cla():
                     # 1층 안에서 이동
                     (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='y', target_coordinate=6, avoid_list=[], in_mapname=['제2동부여융가1', '제2동부여용가1']) 
                     (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='x', target_coordinate=11, avoid_list=[], in_mapname=['제2동부여융가1', '제2동부여용가1'])
-                    (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='y', target_coordinate=4, avoid_list=[[keyboard.Key.left], [keyboard.Key.right]], in_mapname=['제2동부여융가1', '제2동부여용가1'], every_rel=True)
+                    (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='y', target_coordinate=4, avoid_list=[[keyboard.Key.left], [keyboard.Key.right]], in_mapname=['제2동부여융가1', '제2동부여용가1'], exact_move=True)
                     (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='x', target_coordinate=29, avoid_list=[], in_mapname=['제2동부여융가1', '제2동부여용가1'])
                     (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='y', target_coordinate=[15,30], avoid_list=[[keyboard.Key.left], [keyboard.Key.right, keyboard.Key.right]], in_mapname=['제2동부여융가1', '제2동부여용가1'])
                     while (mapname in ['제2동부여융가1', '제2동부여용가1']):
-                        (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='x', target_coordinate=29, avoid_list=[[keyboard.Key.up], [keyboard.Key.down, keyboard.Key.down]], in_mapname=['제2동부여융가1', '제2동부여용가1'], every_rel=True)
+                        (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='x', target_coordinate=29, avoid_list=[[keyboard.Key.up], [keyboard.Key.down, keyboard.Key.down]], in_mapname=['제2동부여융가1', '제2동부여용가1'], exact_move=True)
                         (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='y', target_coordinate=25, avoid_list=[], in_mapname=['제2동부여융가1', '제2동부여용가1'])
                         (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='x', target_coordinate=25, avoid_list=[], in_mapname=['제2동부여융가1', '제2동부여용가1'])
                         (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='y', target_coordinate=28, avoid_list=[], in_mapname=['제2동부여융가1', '제2동부여용가1'])
                         (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='x', target_coordinate=[5,6], avoid_list=[], in_mapname=['제2동부여융가1', '제2동부여용가1'])
-                        (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='x', target_coordinate=4, avoid_list=[[keyboard.Key.down], [keyboard.Key.down, keyboard.Key.down]], in_mapname=['제2동부여융가1', '제2동부여용가1'], every_rel=True)
+                        (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='x', target_coordinate=4, avoid_list=[[keyboard.Key.down], [keyboard.Key.down, keyboard.Key.down]], in_mapname=['제2동부여융가1', '제2동부여용가1'], exact_move=True)
                         (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='y', target_coordinate=20, avoid_list=[], in_mapname=['제2동부여융가1', '제2동부여용가1'])
                         (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='x', target_coordinate=6, avoid_list=[], in_mapname=['제2동부여융가1', '제2동부여용가1'])
                         (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='y', target_coordinate=17, avoid_list=[], in_mapname=['제2동부여융가1', '제2동부여용가1'])
                         (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='x', target_coordinate=25, avoid_list=[], in_mapname=['제2동부여융가1', '제2동부여용가1'])
-                        (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='y', target_coordinate=16, avoid_list=[[keyboard.Key.left], [keyboard.Key.left, keyboard.Key.left]], in_mapname=['제2동부여융가1', '제2동부여용가1'], every_rel=True)
+                        (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='y', target_coordinate=16, avoid_list=[[keyboard.Key.left], [keyboard.Key.left, keyboard.Key.left]], in_mapname=['제2동부여융가1', '제2동부여용가1'], exact_move=True)
                         (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='x', target_coordinate=[27,28], avoid_list=[], in_mapname=['제2동부여융가1', '제2동부여용가1'])
                         
                     (cur_x, cur_y, mapname) = self.target_move(cur_x, cur_y, mapname, coordinate_type='y', target_coordinate=1, avoid_list=[[keyboard.Key.left], [keyboard.Key.right]], in_mapname=['동부여융가입구', '동부여용가입구']) #다른필드에서 복귀
