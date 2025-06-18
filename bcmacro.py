@@ -17,7 +17,7 @@ pyautogui.FAILSAFE = False
 class Macro_Baram_Cla():
     def __init__(self):
         # 매크로 상태 및 설정
-        self.monitor_mode = 'wide' ########################### normal, wide
+        self.monitor_mode = 'normal' ########################### normal, wide
         ######################################################
         print('wait 5sec')
         time.sleep(5)
@@ -71,8 +71,8 @@ class Macro_Baram_Cla():
         self.mouse_controller = mouse.Controller()
         self.keyboard_controller = keyboard.Controller()
         
-        self.mp_thres = 0.5
-        self.hp_thres = 0.9
+        self.mp_thres = 0.3
+        self.hp_thres = 0.3
         self.skill_done = 1
         self.bomu_time = time.time() - 999
         self.mabi_time = time.time() - 999
@@ -176,8 +176,13 @@ class Macro_Baram_Cla():
         screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
         screenshot = capture_and_crop(screenshot, self.hpmp_cut_region)
         
-        mp_color = np.mean([screenshot.getpixel((round((1-x) * self.hpmp_cut_region[2]),round(self.hpmp_cut_region[3]*3/4))) for x in np.arange(self.mp_thres-0.1, self.mp_thres, 0.005)])
-        mp_color_low = np.mean([screenshot.getpixel((round((1-x) * self.hpmp_cut_region[2]),round(self.hpmp_cut_region[3]*3/4))) for x in np.arange(0.1, 0.2, 0.005)])
+        mp_color_list = [screenshot.getpixel((round((1-x) * self.hpmp_cut_region[2]),round(self.hpmp_cut_region[3]*3/4))) for x in np.arange(self.mp_thres-0.1, self.mp_thres, 0.001)]
+        mp_color_list = [(r,g,b) for (r,g,b) in mp_color_list if ((b > r + 20) and (b > r+20) and (b > 100))]
+        mp_color = np.mean(mp_color_list+[(0,0,0)])
+        mp_color_low_list = [screenshot.getpixel((round((1-x) * self.hpmp_cut_region[2]),round(self.hpmp_cut_region[3]*3/4))) for x in np.arange(0.01, 0.05, 0.001)]
+        mp_color_low_list = [(r,g,b) for (r,g,b) in mp_color_low_list if ((b > r + 20) and (b > r+20) and (b > 100))]
+        mp_color_low = np.mean(mp_color_low_list+[(0,0,0)])
+
         while mp_color < 30:
             self.state['macro_pause'] = True
             if run and self.state['auto_gongj_heal']!='ON':
@@ -206,15 +211,21 @@ class Macro_Baram_Cla():
                 time.sleep(random.uniform(0.1, 0.1 + 0.05))
                 screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
                 screenshot = capture_and_crop(screenshot, self.hpmp_cut_region)
-                mp_color = np.mean([screenshot.getpixel((round((1-x) * self.hpmp_cut_region[2]),round(self.hpmp_cut_region[3]*3/4))) for x in np.arange(self.mp_thres-0.1, self.mp_thres, 0.01)])
+                mp_color_list = [screenshot.getpixel((round((1-x) * self.hpmp_cut_region[2]),round(self.hpmp_cut_region[3]*3/4))) for x in np.arange(self.mp_thres-0.1, self.mp_thres, 0.001)]
+                mp_color_list = [(r,g,b) for (r,g,b) in mp_color_list if ((b > r + 20) and (b > r+20) and (b > 100))]
+                mp_color = np.mean(mp_color_list+[(0,0,0)])
                 mp_color_low = np.mean([screenshot.getpixel((round((1-x) * self.hpmp_cut_region[2]),round(self.hpmp_cut_region[3]*3/4))) for x in np.arange(0.1, 0.2, 0.01)])
         self.state['macro_pause'] = False
 
     def auto_heal(self, run=False):
         screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
         screenshot = capture_and_crop(screenshot, self.hpmp_cut_region)
-        hp_color = np.mean([screenshot.getpixel((round((1-x) * self.hpmp_cut_region[2]),round(self.hpmp_cut_region[3]/4))) for x in np.arange(self.hp_thres-0.1, self.hp_thres, 0.005)])
-        mp_color = np.mean([screenshot.getpixel((round((1-x) * self.hpmp_cut_region[2]),round(self.hpmp_cut_region[3]*3/4))) for x in np.arange(self.mp_thres-0.1, self.mp_thres, 0.005)])
+        hp_color_list = [screenshot.getpixel((round((1-x) * self.hpmp_cut_region[2]),round(self.hpmp_cut_region[3]/4))) for x in np.arange(self.hp_thres-0.1, self.hp_thres, 0.001)]
+        hp_color_list = [(r,g,b) for (r,g,b) in hp_color_list if ((r > g + 20) and (r > b+20) and (r > 100))]
+        hp_color = np.mean(hp_color_list+[(0,0,0)])
+        mp_color_list = [screenshot.getpixel((round((1-x) * self.hpmp_cut_region[2]),round(self.hpmp_cut_region[3]*3/4))) for x in np.arange(self.mp_thres-0.1, self.mp_thres, 0.001)]
+        mp_color_list = [(r,g,b) for (r,g,b) in mp_color_list if ((b > r + 20) and (b > r+20) and (b > 100))]
+        mp_color = np.mean(mp_color_list+[(0,0,0)])
         while hp_color < 30:
             if mp_color < 30:
                 self.auto_gongj(run=False)
@@ -232,7 +243,9 @@ class Macro_Baram_Cla():
                 self.keyboard_controller.release(keyboard.Key.esc)
                 screenshot = pyautogui.screenshot(region=self.game_region, allScreens=True)
                 screenshot = capture_and_crop(screenshot, self.hpmp_cut_region)
-                hp_color = np.mean([screenshot.getpixel((round((1-x) * self.hpmp_cut_region[2]),round(self.hpmp_cut_region[3]/4))) for x in np.arange(self.hp_thres-0.1, self.hp_thres, 0.005)])
+                hp_color_list = [screenshot.getpixel((round((1-x) * self.hpmp_cut_region[2]),round(self.hpmp_cut_region[3]/4))) for x in np.arange(self.hp_thres-0.1, self.hp_thres, 0.001)]
+                hp_color_list = [(r,g,b) for (r,g,b) in hp_color_list if ((r > g + 20) and (r > b+20) and (r > 100))]
+                hp_color = np.mean(hp_color_list+[(0,0,0)])
         self.state['macro_pause'] = False
     
     def auto_bomu(self):
@@ -383,7 +396,6 @@ class Macro_Baram_Cla():
                 self.active_spell_auto(skill_name=['mabi'], macro_type=macro_type, target_iter=[1], active_iter=10, change_dir=True, auto_bomu=False, auto_mabi=False)
 
             elif self.state['macro_type']=='weapon':
-                self.mp_thres = 0.5
                 self.skill_mapping['mabi']['delay']=0.05
                 macro_type = 'weapon'
                 self.active_spell_auto(skill_name='weapon', macro_type=macro_type, target_iter=[1], active_iter=7, change_dir=False, auto_bomu=True, auto_mabi=True, tap_method='natural')
@@ -1128,7 +1140,7 @@ class Macro_Baram_Cla():
         window_width, window_height = (306, 450)
 
         # self.root.geometry(f"{window_width}x{window_height}+{-0}+{60}")
-        self.root.geometry(f"{window_width}x{window_height}+{self.game_region[0]}+{self.game_region[1]}")
+        self.root.geometry(f"{window_width}x{window_height}+{(self.game_region[0]-520)*self.monitor_scale}+{self.game_region[1]*self.monitor_scale}")
         
 
         label_font = 10
